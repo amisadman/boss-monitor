@@ -1,5 +1,5 @@
 import os
-import json
+import requests
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+BACKEND_URL = os.getenv("BACKEND_URL").rstrip("/")
 ALERT_CHANNEL_ID = int(os.getenv("ALERT_CHANNEL_ID"))
 
 # Discord bot setup
@@ -17,27 +18,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Prevent duplicate alerts
 notified_alert_ids = set()
-
-
-# Load mock device data
-def load_devices():
-    with open("mockdata/devices.json", "r") as f:
-        return json.load(f)["data"]
-
-def load_room():
-    with open("mockdata/room_work.json", "r") as f:
-        return json.load(f)["data"]
-
-# Load mock usage data
-def load_usage():
-    with open("mockdata/usage.json", "r") as f:
-        return json.load(f)
-
-
-# Load mock alerts
-def load_alerts():
-    with open("mockdata/alerts.json", "r") as f:
-        return json.load(f)
 
 
 # Runs once when the bot connects
@@ -52,13 +32,19 @@ async def on_ready():
 # Show office status
 @bot.command(name="status")
 async def status(ctx):
+
     async with ctx.typing():
+
         try:
-            devices = load_devices()
+            response = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
+            response.raise_for_status()
+
+            devices = response.json()["data"]
 
             room_stats = {}
 
             for d in devices:
+
                 room = d.get("room", "unknown")
 
                 if room not in room_stats:
@@ -68,14 +54,17 @@ async def status(ctx):
                     }
 
                 if d.get("status") == "on":
+
                     if d.get("type") == "fan":
                         room_stats[room]["fans"] += 1
+
                     elif d.get("type") == "light":
                         room_stats[room]["lights"] += 1
 
             message = ""
 
             for room, counts in room_stats.items():
+
                 message += (
                     f"**{room.title()}**\n"
                     f"🌀 Fans ON: {counts['fans']}\n"
@@ -86,7 +75,7 @@ async def status(ctx):
 
         except Exception as e:
             print(e)
-            await ctx.send("❌ Failed to load device data.")
+            await ctx.send("❌ Failed to retrieve office status.")
 
 
 # Show status for one room
@@ -94,20 +83,23 @@ async def status(ctx):
 async def room(ctx, *, name: str = None):
 
     if not name:
-        await ctx.send("Usage: `!room kitchen`")
+        await ctx.send("Usage: `!room work1`")
         return
 
     async with ctx.typing():
 
         try:
+
             clean_name = name.lower().strip()
 
-            all_devices = load_devices()
+            response = requests.get(
+                f"{BACKEND_URL}/api/devices/rooms/{clean_name}",
+                timeout=5
+            )
 
-            devices = [
-                d for d in all_devices
-                if d.get("room", "").lower() == clean_name
-            ]
+            response.raise_for_status()
+
+            devices = response.json()["data"]
 
             if len(devices) == 0:
                 await ctx.send(f"No room named **{clean_name}** found.")
@@ -133,29 +125,39 @@ async def room(ctx, *, name: str = None):
 
         except Exception as e:
             print(e)
-            await ctx.send("❌ Failed to load room data.")
+            await ctx.send(f"❌ Failed to retrieve room '{name}'.")
 
 
-# Show power usage
+# Show energy usage
 @bot.command(name="usage")
 async def usage(ctx):
 
     async with ctx.typing():
 
         try:
-            usage_data = load_usage()
 
-            live_w = usage_data.get("power_w", 0)
-            daily_kwh = usage_data.get("daily_kwh", 0)
+            response = requests.get(
+                f"{BACKEND_URL}/api/usage",
+                timeout=5
+            )
+
+            response.raise_for_status()
+
+            usage_data = response.json()["data"]
+
+            live_w = usage_data.get("totalWattsNow", 0)
+            daily_kwh = usage_data.get("estimatedKwhToday", 0)
+            cost_today = usage_data.get("estimatedCostToday", 0)
 
             await ctx.send(
                 f"⚡ Current Power: **{live_w}W**\n"
-                f"📈 Today's Usage: **{daily_kwh} kWh**"
+                f"📈 Today's Usage: **{daily_kwh} kWh**\n"
+                f"💰 Today's Cost: **৳{cost_today}**"
             )
 
         except Exception as e:
             print(e)
-            await ctx.send("❌ Failed to load usage data.")
+            await ctx.send("❌ Failed to retrieve usage statistics.")
 
 
 # Check alerts every 30 seconds
@@ -169,7 +171,14 @@ async def check_backend_alerts():
 
     try:
 
-        alerts = load_alerts()
+        response = requests.get(
+            f"{BACKEND_URL}/api/alerts",
+            timeout=5
+        )
+
+        response.raise_for_status()
+
+        alerts = response.json()["data"]
 
         for alert in alerts:
 
@@ -190,11 +199,20 @@ async def check_backend_alerts():
 
                 notified_alert_ids.add(alert_id)
 
+                try:
+                    requests.patch(
+                        f"{BACKEND_URL}/api/alerts/{alert_id}/ack",
+                        json={"notifiedDiscord": True},
+                        timeout=3
+                    )
+                except Exception:
+                    pass
+
     except Exception as e:
         print(e)
 
 
-# Wait until the bot is ready before starting the alert loop
+# Wait until the bot is ready
 @check_backend_alerts.before_loop
 async def before_alerts():
     await bot.wait_until_ready()
