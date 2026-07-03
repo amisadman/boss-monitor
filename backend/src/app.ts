@@ -16,7 +16,31 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+import os from 'os';
+
 // Routing API endpoints
+app.get('/', (req, res) => {
+  const clientIP = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || req.ip || 'unknown';
+  const uptimeSeconds = process.uptime();
+  const hours = Math.floor(uptimeSeconds / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to Boss Monitor',
+    version: '1.0.0',
+    clientDetails: {
+      clientIP,
+      accessedAt: new Date().toISOString(),
+    },
+    serverDetails: {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      uptime: `${hours} hours ${minutes} minutes`,
+    },
+  });
+});
+
 app.use('/api/devices', deviceRouter);
 app.use('/api/alerts', alertRouter);
 app.use('/api/usage', usageRouter);
