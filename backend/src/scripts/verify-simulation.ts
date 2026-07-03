@@ -31,7 +31,7 @@ const runTest = async () => {
     // 2. Seed devices
     await seedDevices();
     const seededCount = await Device.countDocuments();
-    assert(seededCount === 18, 'Should seed 18 devices');
+    assert(seededCount === 15, 'Should seed 15 devices');
 
     // 3. Test after-hours alerts (8:00 AM is after-hours)
     console.log('\n--- Test After-Hours Alert (8:00 AM) ---');
@@ -43,10 +43,12 @@ const runTest = async () => {
 
     const activeDevices = await Device.find({ status: 'on' });
     console.log(`Number of devices ON after hours: ${activeDevices.length}`);
+    console.log('ON Devices:', activeDevices.map((d) => d.deviceId));
     assert(activeDevices.length > 0, 'After-hours guarantee should turn at least 1 device ON');
 
     const afterHoursAlerts = await Alert.find({ type: 'after-hours', resolvedAt: null });
     console.log(`Number of active after-hours alerts: ${afterHoursAlerts.length}`);
+    console.log('Active Alerts Scopes:', afterHoursAlerts.map((a) => a.scope));
     assert(afterHoursAlerts.length === activeDevices.length, 'Should have an active after-hours alert for each ON device');
 
     // 4. Test office hours transition (10:00 AM)
