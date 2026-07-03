@@ -1,0 +1,92 @@
+
+{
+  "status": 200,
+  "success": true,
+  "message": "Devices for room work1 retrieved successfully",
+  "data": [
+    {
+      "_id": "6a47c629ffea9d04dad75d13",
+      "deviceId": "work1-fan-1",
+      "type": "fan",
+      "room": "work1",
+      "label": "Work1 Fan 1",
+      "status": "off",
+      "wattage": 60,
+      "lastChanged": "2026-07-04T20:00:00.000Z",
+      "onSince": null,
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:24:40.477Z"
+    },
+    {
+      "_id": "6a47c629ffea9d04dad75d14",
+      "deviceId": "work1-fan-2",
+      "type": "fan",
+      "room": "work1",
+      "label": "Work1 Fan 2",
+      "status": "off",
+      "wattage": 60,
+      "lastChanged": "2026-07-04T19:20:00.000Z",
+      "onSince": null,
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:24:20.475Z"
+    },
+    {
+      "_id": "6a47c629ffea9d04dad75d15",
+      "deviceId": "work1-light-1",
+      "type": "light",
+      "room": "work1",
+      "label": "Work1 Light 1",
+      "status": "off",
+      "wattage": 15,
+      "lastChanged": "2026-07-04T17:40:00.000Z",
+      "onSince": null,
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:23:30.475Z"
+    },
+    {
+      "_id": "6a47c629ffea9d04dad75d16",
+      "deviceId": "work1-light-2",
+      "type": "light",
+      "room": "work1",
+      "label": "Work1 Light 2",
+      "status": "off",
+      "wattage": 15,
+      "lastChanged": "2026-07-04T19:00:00.000Z",
+      "onSince": null,
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:24:10.478Z"
+    },
+    {
+      "_id": "6a47c629ffea9d04dad75d17",
+      "deviceId": "work1-light-3",
+      "type": "light",
+      "room": "work1",
+      "label": "Work1 Light 3",
+      "status": "off",
+      "wattage": 15,
+      "lastChanged": "2026-07-04T18:40:00.000Z",
+      "onSince": null,
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:24:00.480Z"
+    },
+    {
+      "_id": "6a47c629ffea9d04dad75d18",
+      "deviceId": "work1-light-4",
+      "type": "light",
+      "room": "work1",
+      "label": "Work1 Light 4",
+      "status": "on",
+      "wattage": 15,
+      "lastChanged": "2026-07-04T21:00:00.000Z",
+      "onSince": "2026-07-04T21:00:00.000Z",
+      "__v": 0,
+      "createdAt": "2026-07-03T14:24:41.581Z",
+      "updatedAt": "2026-07-03T15:25:10.488Z"
+    }
+  ]
+}

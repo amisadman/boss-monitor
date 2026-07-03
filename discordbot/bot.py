@@ -21,19 +21,22 @@ notified_alert_ids = set()
 
 # Load mock device data
 def load_devices():
-    with open("mock_data/devices.json", "r") as f:
-        return json.load(f)
+    with open("mockdata/devices.json", "r") as f:
+        return json.load(f)["data"]
 
+def load_room():
+    with open("mockdata/room_work.json", "r") as f:
+        return json.load(f)["data"]
 
 # Load mock usage data
 def load_usage():
-    with open("mock_data/usage.json", "r") as f:
+    with open("mockdata/usage.json", "r") as f:
         return json.load(f)
 
 
 # Load mock alerts
 def load_alerts():
-    with open("mock_data/alerts.json", "r") as f:
+    with open("mockdata/alerts.json", "r") as f:
         return json.load(f)
 
 
