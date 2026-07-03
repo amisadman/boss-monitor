@@ -1,0 +1,32 @@
+[
+    {
+        "room": "kitchen",
+        "type": "fan",
+        "status": "on"
+    },
+    {
+        "room": "kitchen",
+        "type": "light",
+        "status": "off"
+    },
+    {
+        "room": "drawing",
+        "type": "fan",
+        "status": "on"
+    },
+    {
+        "room": "drawing",
+        "type": "light",
+        "status": "on"
+    },
+    {
+        "room": "office",
+        "type": "fan",
+        "status": "off"
+    },
+    {
+        "room": "office",
+        "type": "light",
+        "status": "on"
+    }
+]

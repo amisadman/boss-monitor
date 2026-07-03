@@ -1,0 +1,10 @@
+[
+    {
+        "_id": "1",
+        "type": "Power",
+        "scope": "Kitchen",
+        "message": "Kitchen power consumption is high.",
+        "resolvedAt": null,
+        "notifiedDiscord": false
+    }
+]
