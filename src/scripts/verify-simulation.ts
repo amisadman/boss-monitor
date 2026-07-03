@@ -9,6 +9,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Override database name for test isolation
+if (process.env.MONGO_URI) {
+  process.env.MONGO_URI = process.env.MONGO_URI.replace(/\/boss-monitor(\?|$)/, '/boss-monitor-test$1');
+} else {
+  process.env.MONGO_URI = 'mongodb://localhost:27017/boss-monitor-test';
+}
+
 const assert = (condition: boolean, message: string) => {
   if (!condition) {
     console.error(`❌ ASSERTION FAILED: ${message}`);
