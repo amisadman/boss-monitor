@@ -8,7 +8,10 @@ export const getUsageSummary = catchAsync(async (req: Request, res: Response) =>
   const simulatedTime = getSimulatedTime();
   const summary = await usageService.getUsageSummary(simulatedTime);
   
-  return sendResponse(res, 200, true, 'Usage summary retrieved successfully', summary);
+  return sendResponse(res, 200, true, 'Usage summary retrieved successfully', {
+    ...summary,
+    simulatedTime,
+  });
 });
 
 export const getUsageHistory = catchAsync(async (req: Request, res: Response) => {
