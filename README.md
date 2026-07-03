@@ -155,6 +155,8 @@ The simulator runs inside the backend process on an interval of `10 seconds` (re
 
 ## 8. Hardware / ESP32 Controller (Room 1)
 
+**Wokwi Simulation Project Link:** [ESP32 Room 1 Controller](https://wokwi.com/projects/468547829392730113)
+
 A standalone conceptual controller is designed in Wokwi utilizing an ESP32 to represent **Work Room 1** (2 fans and 3 lights).
 
 ### ESP32 Pin-Mapping
