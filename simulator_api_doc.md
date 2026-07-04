@@ -6,8 +6,7 @@ This document outlines the REST API endpoints used to manually control and test 
 
 ## Base URLs
 *   **Local Development:** `http://localhost:5000`
-*   **Production API:** `https://boss-monitor-api.onrender.com` *(Replace with your actual Render backend URL)*
-
+*   **Production API:** `https://boss-monitor.onrender.com`
 ---
 
 ## 1. Manually Toggle Device State (ON / OFF)
@@ -75,9 +74,37 @@ Use this endpoint to fast-forward the simulator virtual clock to a specific hour
     }
     ```
 
+## 3. Get Hourly Usage History
+Retrieve aggregated usage data grouped by virtual hour for the last 24 hours. This endpoint is ideal for feeding bar/line charts showing hourly consumption distribution.
+
+*   **Endpoint:** `GET /api/usage/hourly`
+*   **Success Response (200 OK):**
+    ```json
+    {
+      "success": true,
+      "message": "Hourly usage history retrieved successfully",
+      "data": [
+        {
+          "hour": "08:00 AM",
+          "averageWatts": 143,
+          "DrawingRoom": 23,
+          "WorkRoom1": 83,
+          "WorkRoom2": 38
+        },
+        {
+          "hour": "09:00 AM",
+          "averageWatts": 210,
+          "DrawingRoom": 30,
+          "WorkRoom1": 105,
+          "WorkRoom2": 75
+        }
+      ]
+    }
+    ```
+
 ---
 
-## 3. Room Names Cheat Sheet
+## 4. Room Names Cheat Sheet
 When referencing devices or querying per-room usage, ensure you use the exact updated casing for room names:
 *   `DrawingRoom`
 *   `WorkRoom1`

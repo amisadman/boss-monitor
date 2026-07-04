@@ -127,6 +127,16 @@ const runTest = async () => {
     const resolvedManualAlerts = await Alert.find({ type: 'after-hours', scope: 'work1-fan-1', resolvedAt: { $ne: null } });
     assert(resolvedManualAlerts.length === 1, 'Jumping clock to 9:00 AM (office hours) should resolve manual after-hours alert');
 
+    // 9. Test hourly usage aggregation history
+    console.log('\n--- Test Hourly Usage Aggregation History ---');
+    const { getHourlyUsageHistory } = require('../modules/usage/usage.service');
+    const hourlySummary = await getHourlyUsageHistory();
+    assert(Array.isArray(hourlySummary), 'Hourly usage history should return an array');
+    assert(hourlySummary.length > 0, 'Hourly usage history should contain at least one hourly grouping');
+    assert(hourlySummary[0].hour !== undefined, 'Hourly summary object should contain an hour field');
+    assert(hourlySummary[0].averageWatts !== undefined, 'Hourly summary object should contain an averageWatts field');
+    console.log('Hourly Usage History Result:', hourlySummary);
+
     console.log('\nAll simulation tests passed successfully! 🎉');
     await mongoose.connection.close();
     process.exit(0);
