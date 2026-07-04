@@ -72,11 +72,11 @@ const runTest = async () => {
     const resolvedAfterHoursAlerts = await Alert.find({ type: 'after-hours', resolvedAt: { $ne: null } });
     assert(resolvedAfterHoursAlerts.length > 0, 'After-hours alerts should be resolved');
 
-    const work1Devices = await Device.find({ room: 'work1' });
+    const work1Devices = await Device.find({ room: 'WorkRoom1' });
     const allWork1On = work1Devices.every((d) => d.status === 'on');
-    assert(allWork1On, 'Special Demo Rule: All work1 devices must be ON at 10:00 AM');
+    assert(allWork1On, 'Special Demo Rule: All WorkRoom1 devices must be ON at 10:00 AM');
 
-    // 5. Test prolonged-on alerts (12:00 PM - after 2 hours of work1 being ON)
+    // 5. Test prolonged-on alerts (12:00 PM - after 2 hours of WorkRoom1 being ON)
     console.log('\n--- Test Prolonged-On Alert (12:00 PM) ---');
     const time12 = new Date();
     time12.setHours(12, 0, 0, 0);
@@ -84,8 +84,8 @@ const runTest = async () => {
 
     await runSimulationTick();
 
-    const prolongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'work1', resolvedAt: null });
-    assert(prolongedAlerts.length === 1, 'Should trigger prolonged-on alert for room work1 after 2 hours');
+    const prolongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'WorkRoom1', resolvedAt: null });
+    assert(prolongedAlerts.length === 1, 'Should trigger prolonged-on alert for room WorkRoom1 after 2 hours');
 
     // 6. Test prolonged-on resolution (1:00 PM - turn off one device)
     console.log('\n--- Test Prolonged-On Resolution (1:00 PM) ---');
@@ -93,7 +93,7 @@ const runTest = async () => {
     time13.setHours(13, 0, 0, 0);
     setSimulatedTime(time13);
 
-    // Turn off one device in work1
+    // Turn off one device in WorkRoom1
     const deviceToTurnOff = work1Devices[0];
     deviceToTurnOff.status = 'off';
     deviceToTurnOff.onSince = null;
@@ -102,10 +102,10 @@ const runTest = async () => {
 
     await runSimulationTick();
 
-    const activeProlongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'work1', resolvedAt: null });
-    assert(activeProlongedAlerts.length === 0, 'Prolonged-on alert should resolve when a device in work1 is turned OFF');
+    const activeProlongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'WorkRoom1', resolvedAt: null });
+    assert(activeProlongedAlerts.length === 0, 'Prolonged-on alert should resolve when a device in WorkRoom1 is turned OFF');
 
-    const resolvedProlongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'work1', resolvedAt: { $ne: null } });
+    const resolvedProlongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'WorkRoom1', resolvedAt: { $ne: null } });
     assert(resolvedProlongedAlerts.length === 1, 'Prolonged-on alert should be resolved');
 
     console.log('\nAll simulation tests passed successfully! 🎉');

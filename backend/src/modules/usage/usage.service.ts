@@ -4,9 +4,9 @@ import { Device } from '../device/device.model';
 export interface UsageSummary {
   totalWattsNow: number;
   perRoomWatts: {
-    drawing: number;
-    work1: number;
-    work2: number;
+    DrawingRoom: number;
+    WorkRoom1: number;
+    WorkRoom2: number;
   };
   estimatedKwhToday: number;
   estimatedCostToday: number;
@@ -17,17 +17,17 @@ export const getUsageSummary = async (simulatedTime: Date): Promise<UsageSummary
 
   let totalWattsNow = 0;
   const perRoomWatts = {
-    drawing: 0,
-    work1: 0,
-    work2: 0,
+    DrawingRoom: 0,
+    WorkRoom1: 0,
+    WorkRoom2: 0,
   };
 
   devices.forEach((device) => {
     if (device.status === 'on') {
       totalWattsNow += device.wattage;
-      if (device.room === 'drawing') perRoomWatts.drawing += device.wattage;
-      else if (device.room === 'work1') perRoomWatts.work1 += device.wattage;
-      else if (device.room === 'work2') perRoomWatts.work2 += device.wattage;
+      if (device.room === 'DrawingRoom') perRoomWatts.DrawingRoom += device.wattage;
+      else if (device.room === 'WorkRoom1') perRoomWatts.WorkRoom1 += device.wattage;
+      else if (device.room === 'WorkRoom2') perRoomWatts.WorkRoom2 += device.wattage;
     }
   });
 
@@ -56,7 +56,7 @@ export const getUsageSummary = async (simulatedTime: Date): Promise<UsageSummary
 
 export const saveUsageSnapshot = async (
   totalWatts: number,
-  perRoomWatts: { drawing: number; work1: number; work2: number },
+  perRoomWatts: { DrawingRoom: number; WorkRoom1: number; WorkRoom2: number },
   timestamp: Date
 ): Promise<IUsageHistory> => {
   const snapshot = new UsageHistory({
