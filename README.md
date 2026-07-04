@@ -163,7 +163,7 @@ The simulator runs inside the backend process on an interval of `10 seconds` (re
 
 ## 8. Hardware / ESP32 Controller Simulations
 
-For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](file:///d:/Coading/hackathon/boss-monitor/wokwi/README.md).
+For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](wokwi/README.md).
 
 ### Live Wokwi Simulation Projects
 
