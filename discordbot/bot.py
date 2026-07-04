@@ -137,9 +137,8 @@ def humanize_response(summary_context: str, user_query: str, fallback_text: str,
                         "BEFORE the number it describes, e.g. '🌀 3 fans ON', never '3 fans ON 🌀'. "
                         "Keep each bullet as short as possible while staying clear. "
                         "Do not include code block markdown like ``` or backticks. "
-                        "Never use a dollar sign ($) anywhere. Watt figures have no currency symbol "
-                        "at all — just the number followed by W. Only cost figures use ৳, and only if "
-                        "the data already includes ৳. "
+                        "Never use a dollar sign ($) or any currency symbol anywhere — watt and kWh "
+                        "figures get no symbol at all, just the number and unit. "
                         "Strictly use the exact numbers given; never invent or extrapolate metrics."
                     )
                 },
@@ -333,17 +332,15 @@ async def usage(ctx):
 
             live_w = usage_data.get("totalWattsNow", 0)
             daily_kwh = usage_data.get("estimatedKwhToday", 0)
-            cost_today = usage_data.get("estimatedCostToday", 0)
             per_room_watts = normalize_per_room_watts(usage_data.get("perRoomWatts", {}))
 
             summary = (
                 f"Telemetry: Current total load is {live_w}W. Estimated daily energy footprint is "
-                f"{daily_kwh} kWh. Total cost today is ৳{cost_today}."
+                f"{daily_kwh} kWh."
             )
             fallback_list = [
                 f"⚡ Current Power: **{live_w}W**\n"
-                f"📈 Today's Usage: **{daily_kwh} kWh**\n"
-                f"💰 Today's Cost: **৳{cost_today}**"
+                f"📈 Today's Usage: **{daily_kwh} kWh**"
             ]
 
             if per_room_watts:
@@ -355,13 +352,11 @@ async def usage(ctx):
                 fallback_list.append("**Per-Room Breakdown**\n" + "\n".join(room_lines))
 
             fallback_text = "\n\n".join(fallback_list)
-            fallback_text += (
-                f"\n\nBoss, we're currently drawing {live_w}W, which comes to ৳{cost_today} so far today."
-            )
+            fallback_text += f"\n\nBoss, we're currently drawing {live_w}W."
 
             ai_reply = humanize_response(
                 summary,
-                "What is our current energy utilization draw and cost, broken down by room?",
+                "What is our current energy utilization draw, broken down by room?",
                 fallback_text,
                 allow_closing_comment=True
             )
@@ -393,134 +388,106 @@ async def helpme(ctx):
 @tasks.loop(seconds=45)
 async def check_backend_alerts():
     try:
-        
-        usage_res = requests.get(f"{BACKEND_URL}/api/usage", timeout=5)
-        usage_res.raise_for_status()
-        usage_payload = usage_res.json()["data"]
-
-        simulated_time_str = usage_payload.get("simulatedTime")
-
-        simulated_hour = 12
-        formatted_display_time = "N/A"
-
-        if simulated_time_str:
-            clean_time_str = simulated_time_str.replace("Z", "+00:00")
-            dt = datetime.fromisoformat(clean_time_str)
-            simulated_hour = dt.hour
-            formatted_display_time = dt.strftime("%I:%M %p")
-
-        
-        is_after_hours = simulated_hour < 9 or simulated_hour >= 17
-        active_routing_id = (
-            ALERT_CHANNEL_ID_2
-        )
-
-        target_channel = bot.get_channel(active_routing_id)
-
+        target_channel = bot.get_channel(ALERT_CHANNEL_ID_2)
         if target_channel is None:
             try:
-                target_channel = await bot.fetch_channel(active_routing_id)
-                resolution_status = f"Active (Resolved: #{target_channel.name})"
-            except discord.errors.NotFound:
-                resolution_status = "FAILED (Channel ID does not exist)"
-            except discord.errors.Forbidden:
-                resolution_status = "FAILED (Missing access permissions)"
-            except Exception as ce:
-                resolution_status = f"FAILED ({str(ce)})"
-        else:
-            resolution_status = f"Active (Resolved: #{target_channel.name})"
+                target_channel = await bot.fetch_channel(ALERT_CHANNEL_ID_2)
+            except Exception as e:
+                print(f"⚠️ Alert channel unreachable: {e}")
+                return
 
-        #debug related
-        print("\n" + "=" * 50)
-        print("🕒 BACKEND TELEMETRY TRACKER BUCKET")
-        print("=" * 50)
-        print(f"• Simulated Time : {simulated_time_str if simulated_time_str else 'Unknown'}")
-        print(f"• Parsed Clock   : {formatted_display_time} (Hour: {simulated_hour})")
-        print(f"• Operating Mode : {'🌙 AFTER HOURS (9-5 Passed)' if is_after_hours else '☀️ STANDARD WORKING HOURS (9-5)'}")
-        print(f"• Routing Target : Channel ID ({active_routing_id}) -> {resolution_status}")
-        print("=" * 50)
+        # Build deviceId -> room lookup + live fan/light counts per room.
+        devices_res = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
+        devices_res.raise_for_status()
+        devices = devices_res.json()["data"]
 
-        if target_channel is None:
-            print("⚠️ Skipping alert check loop because target channel is unreachable.")
-            print("=" * 50 + "\n")
-            return
+        device_id_to_room = {}
+        room_stats = {}
+        for d in devices:
+            room = d.get("room", "unknown")
+            device_id = d.get("deviceId")
+            if device_id:
+                device_id_to_room[device_id] = room
 
-        
-        response = requests.get(f"{BACKEND_URL}/api/alerts", timeout=5)
-        response.raise_for_status()
+            if room not in room_stats:
+                room_stats[room] = {"fans": 0, "lights": 0}
+            if d.get("status") == "on":
+                if d.get("type") == "fan":
+                    room_stats[room]["fans"] += 1
+                elif d.get("type") == "light":
+                    room_stats[room]["lights"] += 1
 
-        alerts = response.json()["data"]
+        alerts_res = requests.get(f"{BACKEND_URL}/api/alerts", timeout=5)
+        alerts_res.raise_for_status()
+        alerts = alerts_res.json()["data"]
 
-        active_alerts_count = 0
-        alerted_rooms = {}  
+        # Two alert shapes from the backend:
+        # - type "prolonged-on": scope IS the room name directly (e.g. "DrawingRoom")
+        # - anything else: scope is a deviceId (e.g. "work2-fan-2"), resolve via device_id_to_room
+        still_on_rooms = {}    # preserves first-seen order
+        prolonged_rooms = {}
 
         for alert in alerts:
-
             alert_id = alert.get("_id")
 
-            if (
+            is_new = (
                 alert.get("resolvedAt") is None
                 and not alert.get("notifiedDiscord", False)
                 and alert_id not in notified_alert_ids
-            ):
+            )
+            if not is_new:
+                continue
 
-                active_alerts_count += 1
+            raw_scope = alert.get("scope", "Unknown")
 
-                room_key = alert.get("scope", "Unknown")
-                alerted_rooms[room_key] = True
+            if alert.get("type") == "prolonged-on":
+                room_key = resolve_room_key(raw_scope)
+                prolonged_rooms[room_key] = True
+            else:
+                room_key = device_id_to_room.get(raw_scope, raw_scope)
+                still_on_rooms[room_key] = True
 
-                notified_alert_ids.add(alert_id)
+            notified_alert_ids.add(alert_id)
 
-                try:
-                    requests.patch(
-                        f"{BACKEND_URL}/api/alerts/{alert_id}/ack",
-                        json={"notifiedDiscord": True},
-                        timeout=3
-                    )
-                except Exception:
-                    pass
-
-        if alerted_rooms:
-
-            
-            devices_res = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
-            devices_res.raise_for_status()
-            devices = devices_res.json()["data"]
-
-            room_stats = {}
-            for d in devices:
-                room = d.get("room", "unknown")
-                if room not in room_stats:
-                    room_stats[room] = {"fans": 0, "lights": 0}
-                if d.get("status") == "on":
-                    if d.get("type") == "fan":
-                        room_stats[room]["fans"] += 1
-                    elif d.get("type") == "light":
-                        room_stats[room]["lights"] += 1
-
-            casual_lines = []
-            for room_key in alerted_rooms:
-                friendly_name = display_room_name(room_key)
-                counts = room_stats.get(room_key, {"fans": 0, "lights": 0})
-                casual_lines.append(
-                    f"Hey! **{friendly_name}** still has 🌀 {counts['fans']} fan(s) and 💡 {counts['lights']} "
-                    f"light(s) ON and it's {formatted_display_time}. Did someone forget to leave?"
+            try:
+                requests.patch(
+                    f"{BACKEND_URL}/api/alerts/{alert_id}/ack",
+                    json={"notifiedDiscord": True},
+                    timeout=3
                 )
+            except Exception:
+                pass
 
-            embed_description = "\n\n".join(casual_lines)
+        if not still_on_rooms and not prolonged_rooms:
+            return
 
-            alert_embed = build_embed("🚨 Office Check-In", embed_description, "alert")
-            await target_channel.send(embed=alert_embed)
+        # Only fetch time context when we actually have something to report
+        usage_res = requests.get(f"{BACKEND_URL}/api/usage", timeout=5)
+        usage_res.raise_for_status()
+        time_ctx = get_simulated_time_context(usage_res.json()["data"])
+        formatted_clock = time_ctx["formatted_clock"] if time_ctx else "N/A"
+        shift_label = time_ctx["shift_label"] if time_ctx else "Unknown"
 
-            print(f"📡 Dispatched ({active_alerts_count}) pending notification frames successfully.")
+        lines = []
 
-        else:
-            print("💤 Check Complete: No new alert frames detected.")
+        for room_key in still_on_rooms:
+            counts = room_stats.get(room_key, {"fans": 0, "lights": 0})
+            lines.append(
+                f"Hey! {room_key} still has 🌀 {counts['fans']} fan(s) and 💡 {counts['lights']} "
+                f"light(s) ON and it's {formatted_clock}. Did someone forget to leave? "
+                f"It's currently {shift_label}."
+            )
 
-        print("=" * 50 + "\n")
+        for room_key in prolonged_rooms:
+            counts = room_stats.get(room_key, {"fans": 0, "lights": 0})
+            total_on = counts["fans"] + counts["lights"]
+            lines.append(f"{total_on} devices in {room_key} room have been ON for more than 2 hours.")
+
+        alert_embed = build_embed("🚨 Office Check-In", "\n\n".join(lines), "alert")
+        await target_channel.send(embed=alert_embed)
 
     except Exception as e:
-        print(f"\n❌ Error handling pipeline execution routine: {e}\n")
+        print(f"❌ Error in check_backend_alerts: {e}")
 
 # check bot status if ready or not
 @check_backend_alerts.before_loop
