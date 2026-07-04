@@ -1,63 +1,151 @@
-# Boss Monitor — React Frontend Dashboard
+# Boss Monitor — Client
 
-The user-facing client interface of the **Boss Monitor** office energy tracking system. It provides a real-time, interactive visual dashboard of the office rooms, device states, energy consumption, and policy alerts.
-
----
+A single-page React + TypeScript client built with Vite for the Boss Monitor project. This app connects to the Boss Monitor backend to display office devices, usage graphs, and live alerts over WebSockets.
 
 ## Features
 
-1. **Real-time Live Floorplan:**
-   * Dynamic visual floorplan representing three rooms: **Drawing Room**, **Work Room 1**, and **Work Room 2**.
-   * Instant color-coded indicators representing active/inactive relays (fans, lights) driven by WebSockets.
-2. **Interactive Power Calculations:**
-   * Live gauge showing current total power draw (Watts).
-   * Daily aggregated energy metrics (kWh) and real-time cost projections (BDT).
-3. **Historical Consumption Analytics:**
-   * High-fidelity line/bar charts showing hourly consumption history over the past 24 simulated hours.
-4. **Live Alerts Center:**
-   * Proactive warning cards showing policy violations in real-time (e.g. after-hours active loads, prolonged-on rooms) pushed directly via Socket.io.
+- Dashboard showing device list and statuses
 
----
+- Real-time alerts via Socket.IO
 
-## Tech Stack
+- Usage graphs (hourly and aggregate) using Recharts
 
-*   **Build Tool:** Vite (Fast Refresh & HMR)
-*   **Language:** TypeScript
-*   **UI Library:** React (v19)
-*   **Styles:** Vanilla CSS (curated high-end typography and dark-theme aesthetics)
-*   **WebSockets:** Socket.io-client
+- Simulator controls (time travel) for demo data
 
----
+- Visual representation of the environment in 2 modes - Furnished & Circuit
 
-## Directory Structure
+## Tech stack
+
+- React 19 + TypeScript
+
+- Vite for dev server and build
+
+- Socket.IO client for realtime alerts
+
+- Recharts for charts
+
+- TailwindCSS + DaisyUI for styling
+
+## Quick start
+
+Prerequisites:
+
+- Node.js 18+ (recommended)
+
+- npm or yarn
+
+Install and run locally:
+
+```bash
+
+cd  client
+
+npm  install
+
+npm  run  dev
 
 ```
-├── public/                # Static assets & icons
-├── src/
-│   ├── assets/            # SVG logos & layout assets
-│   ├── App.css            # Custom responsive styles
-│   ├── App.tsx            # Main dashboard component & WebSocket hook
-│   ├── index.css          # Base style variables and resets
-│   └── main.tsx           # React mounting configuration
-├── package.json
-└── tsconfig.json
+
+Build for production:
+
+```bash
+
+cd  client
+
+npm  run  build
+
+npm  run  preview  # serve the built app locally
+
 ```
 
----
+## Environment variables
 
-## Getting Started
+The client reads Vite environment variables prefixed with `VITE_`. Create a `.env` file in the `client/` folder or set the variables in your CI/CD system.
 
-### Local Setup
-1.  **Navigate to the client directory:**
-    ```bash
-    cd client
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Run Development Server:**
-    ```bash
-    npm run dev
-    ```
-    Open `http://localhost:5173` in your browser. The client will automatically connect to your locally running backend server (port 5000) and start rendering the real-time simulator ticks.
+Common variables used by the client:
+
+- `VITE_API_URL` — Base URL for the backend (HTTP and Socket.IO). Default in repo: `https://boss-monitor.onrender.com`.
+
+Example `client/.env`:
+
+```env
+
+VITE_API_URL="https://boss-monitor.onrender.com"
+
+```
+
+Notes:
+
+- Vite exposes these variables as `import.meta.env.VITE_API_URL` in the code. Do not prefix with `REACT_APP` or `process.env` — use `VITE_`.
+
+## Available scripts
+
+Run these from the `client/` folder.
+
+- `npm run dev` — Start Vite dev server with HMR
+
+- `npm run build` — Type-check and build production bundle
+
+- `npm run preview` — Preview production build locally
+
+- `npm run lint` — Run ESLint across the codebase
+
+You can run them with npm or yarn (e.g. `npm run dev`).
+
+## How the client talks to the backend
+
+- REST endpoints (examples used in the code):
+
+- `${import.meta.env.VITE_API_URL}/api/devices` — device list
+
+- `${import.meta.env.VITE_API_URL}/api/usage` — usage data
+
+- `${import.meta.env.VITE_API_URL}/api/alerts` — alerts and ack endpoints
+
+- `${import.meta.env.VITE_API_URL}/api/simulator/time` — simulator time control
+
+- Socket.IO: `client/src/socket.ts` connects using `io(import.meta.env.VITE_API_URL)` to receive live alerts.
+
+When developing locally, point `VITE_API_URL` to your running backend (for example `http://localhost:5000`).
+
+## Developer notes
+
+- Main entry: `src/main.tsx`
+
+- Key components:
+
+- `src/components/AlertsPanel.tsx` — alert list and acknowledgement
+
+- `src/components/OfficeDevices.tsx` — visual device list (fans & lights) and statuses
+
+- `src/components/UsageGraph.tsx` — charts for usage
+
+- `src/socket.ts` — Socket.IO client singleton
+
+- If you change TypeScript compiler options, `npm run build` runs `tsc -b` before building with Vite.
+
+## Troubleshooting
+
+- If the app cannot reach the API, verify `VITE_API_URL` and CORS settings on the backend.
+
+- If real-time alerts don't arrive, confirm the backend Socket.IO server is reachable and using compatible Socket.IO versions.
+
+- ESLint errors: run `npm run lint` and follow the fixes suggested by the linter.
+
+## Contributing
+
+1. Fork the repo and create a feature branch.
+
+2. Follow existing code patterns and TypeScript types in `src/types.ts`.
+
+3. Run the dev server and add tests or manual verification steps for UI changes.
+
+4. Open a PR with a clear description and screenshots if applicable.
+
+## License
+
+This client follows the repository's license. Check the project root `README.md` for license details.
+
+## Contact
+
+If you need help running the client, open an issue in the main repository or reach out to the project maintainer.
