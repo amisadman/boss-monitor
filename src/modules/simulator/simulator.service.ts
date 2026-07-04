@@ -215,3 +215,56 @@ export const stopSimulator = (): void => {
     logger.info('Simulator Service stopped.');
   }
 };
+
+export const manualToggleDevice = async (deviceId: string, status: 'on' | 'off'): Promise<IDevice> => {
+  const device = await Device.findOne({ deviceId });
+  if (!device) {
+    throw new Error(`Device not found: ${deviceId}`);
+  }
+
+  device.status = status;
+  device.lastChanged = simulatedTime;
+  device.onSince = status === 'on' ? simulatedTime : null;
+  await device.save();
+
+  // Refetch all devices for alert evaluation and broadcast
+  const allDevices = await Device.find();
+  await evaluateAlerts(allDevices);
+
+  // Broadcast state instantly via socket
+  const summary = await getUsageSummary(simulatedTime);
+  try {
+    const io = getIO();
+    io.emit('device:update', {
+      devices: allDevices,
+      simulatedTime,
+      ...summary,
+    });
+  } catch (err) {
+    // Socket.io not initialized
+  }
+
+  // Save snapshot in background
+  saveUsageSnapshot(summary.totalWattsNow, summary.perRoomWatts, simulatedTime)
+    .catch((error) => logger.error('Error saving usage snapshot in background:', error));
+
+  return device;
+};
+
+export const setSimulatorHour = async (hour: number): Promise<Date> => {
+  if (hour < 0 || hour > 23) {
+    throw new Error('Hour must be between 0 and 23');
+  }
+
+  const nextTime = new Date(simulatedTime);
+  nextTime.setHours(hour, 0, 0, 0);
+  simulatedTime = nextTime;
+
+  // Reset wasOfficeHours so transition triggers are re-evaluated next tick
+  wasOfficeHours = null;
+
+  // Trigger a simulator tick immediately to evaluate status and alerts for the new hour
+  await runSimulationTick();
+
+  return simulatedTime;
+};
