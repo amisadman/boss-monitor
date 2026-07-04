@@ -43,13 +43,13 @@ export const runSimulationTick = async (): Promise<void> => {
       return;
     }
 
-    // 3. Mutate device states
-    for (const device of devices) {
+    // 3. Mutate device states (Parallel DB Writes)
+    const savePromises = devices.map(async (device) => {
       let shouldBeOn = false;
 
       // Special Demo Rule: Force Work Room 1 devices to stay ON between 10:00 AM and 1:00 PM
       // to trigger the prolonged-on alert (on for >2 hours).
-      if (device.room === 'work1' && hour >= 10 && hour < 13) {
+      if (device.room === 'WorkRoom1' && hour >= 10 && hour < 13) {
         shouldBeOn = true;
       } else if (isOfficeHours) {
         // Office hours probability: 80% on
@@ -67,7 +67,9 @@ export const runSimulationTick = async (): Promise<void> => {
         device.onSince = nextStatus === 'on' ? simulatedTime : null;
         await device.save();
       }
-    }
+    });
+
+    await Promise.all(savePromises);
 
     // Special Demo Rule: After-hours guarantee
     // Ensure at least 1-2 devices remain ON during after-hours in some room
@@ -77,14 +79,16 @@ export const runSimulationTick = async (): Promise<void> => {
       if (activeDevices.length === 0) {
         logger.info('After hours: No devices are ON. Forcing 1-2 devices ON for alert demonstration.');
         const countToTurnOn = Math.floor(Math.random() * 2) + 1; // 1 or 2
+        const forcePromises = [];
         for (let i = 0; i < countToTurnOn; i++) {
           const randomIndex = Math.floor(Math.random() * devices.length);
           const device = devices[randomIndex];
           device.status = 'on';
           device.lastChanged = simulatedTime;
           device.onSince = simulatedTime;
-          await device.save();
+          forcePromises.push(device.save());
         }
+        await Promise.all(forcePromises);
       }
     }
 
@@ -94,11 +98,10 @@ export const runSimulationTick = async (): Promise<void> => {
     // 4. Run Alert Evaluation Engine
     await evaluateAlerts(updatedDevices);
 
-    // 5. Save usage snapshot
+    // Get usage summary for broadcast
     const summary = await getUsageSummary(simulatedTime);
-    await saveUsageSnapshot(summary.totalWattsNow, summary.perRoomWatts, simulatedTime);
 
-    // 6. Broadcast snapshot to dashboard clients via Socket.io
+    // 6. Broadcast snapshot to dashboard clients via Socket.io IMMEDIATELY
     try {
       const io = getIO();
       io.emit('device:update', {
@@ -109,6 +112,11 @@ export const runSimulationTick = async (): Promise<void> => {
     } catch (err) {
       // Socket.io not initialized
     }
+
+    // 5. Save usage snapshot in background (asynchronously, do not block)
+    saveUsageSnapshot(summary.totalWattsNow, summary.perRoomWatts, simulatedTime)
+      .catch((error) => logger.error('Error saving usage snapshot in background:', error));
+
   } catch (error) {
     logger.error('Error running simulation tick:', error);
   }
@@ -140,7 +148,7 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
 
   // Rule 2: Prolonged-on Alerts
   // A room where ALL devices have been continuously on for >2 hours
-  const rooms = ['drawing', 'work1', 'work2'];
+  const rooms = ['DrawingRoom', 'WorkRoom1', 'WorkRoom2'];
   for (const room of rooms) {
     const roomDevices = devices.filter((d) => d.room === room);
     const allOn = roomDevices.every((d) => d.status === 'on');

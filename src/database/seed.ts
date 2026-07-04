@@ -7,25 +7,25 @@ dotenv.config();
 
 const initialDevices = [
   // Drawing Room
-  { deviceId: 'drawing-fan-1', type: 'fan', room: 'drawing', label: 'Drawing Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'drawing-fan-2', type: 'fan', room: 'drawing', label: 'Drawing Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'drawing-light-1', type: 'light', room: 'drawing', label: 'Drawing Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'drawing-light-2', type: 'light', room: 'drawing', label: 'Drawing Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'drawing-light-3', type: 'light', room: 'drawing', label: 'Drawing Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'drawing-fan-1', type: 'fan', room: 'DrawingRoom', label: 'Drawing Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'drawing-fan-2', type: 'fan', room: 'DrawingRoom', label: 'Drawing Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'drawing-light-1', type: 'light', room: 'DrawingRoom', label: 'Drawing Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'drawing-light-2', type: 'light', room: 'DrawingRoom', label: 'Drawing Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'drawing-light-3', type: 'light', room: 'DrawingRoom', label: 'Drawing Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
 
   // Work Room 1
-  { deviceId: 'work1-fan-1', type: 'fan', room: 'work1', label: 'Work1 Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work1-fan-2', type: 'fan', room: 'work1', label: 'Work1 Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work1-light-1', type: 'light', room: 'work1', label: 'Work1 Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work1-light-2', type: 'light', room: 'work1', label: 'Work1 Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work1-light-3', type: 'light', room: 'work1', label: 'Work1 Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work1-fan-1', type: 'fan', room: 'WorkRoom1', label: 'Work1 Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work1-fan-2', type: 'fan', room: 'WorkRoom1', label: 'Work1 Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work1-light-1', type: 'light', room: 'WorkRoom1', label: 'Work1 Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work1-light-2', type: 'light', room: 'WorkRoom1', label: 'Work1 Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work1-light-3', type: 'light', room: 'WorkRoom1', label: 'Work1 Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
 
   // Work Room 2
-  { deviceId: 'work2-fan-1', type: 'fan', room: 'work2', label: 'Work2 Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work2-fan-2', type: 'fan', room: 'work2', label: 'Work2 Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work2-light-1', type: 'light', room: 'work2', label: 'Work2 Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work2-light-2', type: 'light', room: 'work2', label: 'Work2 Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
-  { deviceId: 'work2-light-3', type: 'light', room: 'work2', label: 'Work2 Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work2-fan-1', type: 'fan', room: 'WorkRoom2', label: 'Work2 Fan 1', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work2-fan-2', type: 'fan', room: 'WorkRoom2', label: 'Work2 Fan 2', status: 'off', wattage: 60, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work2-light-1', type: 'light', room: 'WorkRoom2', label: 'Work2 Light 1', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work2-light-2', type: 'light', room: 'WorkRoom2', label: 'Work2 Light 2', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
+  { deviceId: 'work2-light-3', type: 'light', room: 'WorkRoom2', label: 'Work2 Light 3', status: 'off', wattage: 15, lastChanged: new Date(), onSince: null },
 ];
 
 export const seedDevices = async (): Promise<void> => {
