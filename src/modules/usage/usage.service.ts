@@ -71,3 +71,70 @@ export const getUsageHistory = async (): Promise<IUsageHistory[]> => {
   // Return the last 50 snapshots for the frontend line chart
   return await UsageHistory.find().sort({ timestamp: -1 }).limit(50).then((docs) => docs.reverse());
 };
+
+export interface HourlyUsageSummary {
+  hour: string;
+  averageWatts: number;
+  DrawingRoom: number;
+  WorkRoom1: number;
+  WorkRoom2: number;
+}
+
+export const getHourlyUsageHistory = async (): Promise<HourlyUsageSummary[]> => {
+  const snapshots = await UsageHistory.find().sort({ timestamp: -1 }).limit(72);
+
+  const hourlyGroups: {
+    [key: string]: {
+      totalWatts: number[];
+      DrawingRoom: number[];
+      WorkRoom1: number[];
+      WorkRoom2: number[];
+      timestamp: Date;
+    };
+  } = {};
+
+  snapshots.forEach((snap) => {
+    const date = snap.timestamp;
+    const hourNum = date.getHours();
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    const formattedHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+    const hourKey = `${formattedHour.toString().padStart(2, '0')}:00 ${ampm}`;
+
+    if (!hourlyGroups[hourKey]) {
+      hourlyGroups[hourKey] = {
+        totalWatts: [],
+        DrawingRoom: [],
+        WorkRoom1: [],
+        WorkRoom2: [],
+        timestamp: date,
+      };
+    }
+
+    hourlyGroups[hourKey].totalWatts.push(snap.totalWatts);
+    hourlyGroups[hourKey].DrawingRoom.push(snap.perRoomWatts.DrawingRoom || 0);
+    hourlyGroups[hourKey].WorkRoom1.push(snap.perRoomWatts.WorkRoom1 || 0);
+    hourlyGroups[hourKey].WorkRoom2.push(snap.perRoomWatts.WorkRoom2 || 0);
+  });
+
+  const average = (arr: number[]) => (arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0);
+
+  const result: HourlyUsageSummary[] = Object.keys(hourlyGroups).map((hour) => {
+    const group = hourlyGroups[hour];
+    return {
+      hour,
+      averageWatts: average(group.totalWatts),
+      DrawingRoom: average(group.DrawingRoom),
+      WorkRoom1: average(group.WorkRoom1),
+      WorkRoom2: average(group.WorkRoom2),
+      _timestamp: group.timestamp,
+    } as any;
+  });
+
+  result.sort((a: any, b: any) => a._timestamp.getTime() - b._timestamp.getTime());
+
+  result.forEach((item: any) => {
+    delete item._timestamp;
+  });
+
+  return result;
+};
