@@ -70,11 +70,13 @@ Connected successfully as OfficeAI
 Type `!helpme` in any text channel the bot has access to, or run these commands directly:
 
 *   **`!status`** — Retrieves a real-time status summary of all active lights and fans across the office.
+*   **`!devices`** — Shows total devices and active status
 *   **`!room DrawingRoom`** — Shows Drawing Room device states.
 *   **`!room WorkRoom1`** — Shows Work Room 1 device states.
 *   **`!room WorkRoom2`** — Shows Work Room 2 device states.
 *   **`!usage`** — Shows current power draw (Watts) and today's accumulated consumption (kWh).
 *   **`!time`** — Displays the current simulated virtual clock time.
+*   **`!ask <question>`** — Chat with AI as usual and also replies to any query related to the backend.
 
 ---
 
