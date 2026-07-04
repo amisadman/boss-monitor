@@ -85,7 +85,10 @@ export default function AlertsPanel() {
             <button
               onClick={() => ackMutation.mutate(alert._id)}
               disabled={ackMutation.isPending || alert.notifiedDiscord}
-              className="shrink-0 text-xs font-semibold px-2 py-1 rounded-sm bg-amber-200 text-amber-900 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 text-xs font-semibold px-2 py-1 rounded-sm bg-amber-200 text-amber-900 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer tooltip tooltip-left"
+              data-tip={
+                alert.notifiedDiscord ? "Alert acknoledged" : "Acknoledge alert"
+              }
             >
               {alert.notifiedDiscord ? "Acked" : "Ack"}
             </button>

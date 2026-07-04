@@ -64,7 +64,10 @@ function Header() {
   return (
     <header className="w-full bg-base-200 sticky top-0 z-50 shadow-sm">
       <div className="w-full max-w-7xl mx-auto px-3 h-20 flex items-center justify-between gap-5">
-        <span className="flex items-center gap-2 font-bold text-success text-base">
+        <span
+          className="flex items-center gap-2 font-bold text-success text-base tooltip tooltip-right"
+          data-tip="UI is based on real-time simulated data"
+        >
           <span className="w-2 aspect-square block rounded-full bg-green-500 animate-pulse"></span>
           LIVE
         </span>
