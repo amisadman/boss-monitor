@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Device } from '../modules/device/device.model';
+import { UsageHistory } from '../modules/usage/usage.model';
 import { connectDB } from '../config/db';
 import dotenv from 'dotenv';
 
@@ -47,6 +48,20 @@ export const seedDevices = async (): Promise<void> => {
       console.log('Successfully seeded 15 devices.');
     } else {
       console.log(`DB already contains ${count} devices. Skipping seeding.`);
+    }
+
+    // Check if there are legacy snapshots in UsageHistory
+    const hasLegacySnapshots = await UsageHistory.findOne({
+      $or: [
+        { 'perRoomWatts.drawing': { $exists: true } },
+        { 'perRoomWatts.work1': { $exists: true } },
+        { 'perRoomWatts.work2': { $exists: true } }
+      ]
+    });
+
+    if (hasLegacySnapshots) {
+      console.log('Legacy usage snapshots detected. Clearing UsageHistory collection...');
+      await UsageHistory.deleteMany({});
     }
   } catch (error) {
     console.error('Error seeding devices:', error);
