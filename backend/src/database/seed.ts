@@ -31,7 +31,17 @@ const initialDevices = [
 export const seedDevices = async (): Promise<void> => {
   try {
     const count = await Device.countDocuments();
-    if (count === 0) {
+
+    // Check if there are legacy room names in the DB
+    const hasLegacyRooms = await Device.findOne({
+      room: { $in: ['drawing', 'work1', 'work2'] },
+    });
+
+    if (count === 0 || hasLegacyRooms) {
+      if (hasLegacyRooms) {
+        console.log('Legacy room names detected. Clearing and re-seeding database...');
+        await Device.deleteMany({});
+      }
       console.log('No devices found in DB. Seeding initial 15 devices...');
       await Device.insertMany(initialDevices);
       console.log('Successfully seeded 15 devices.');
