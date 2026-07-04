@@ -108,6 +108,25 @@ const runTest = async () => {
     const resolvedProlongedAlerts = await Alert.find({ type: 'prolonged-on', scope: 'WorkRoom1', resolvedAt: { $ne: null } });
     assert(resolvedProlongedAlerts.length === 1, 'Prolonged-on alert should be resolved');
 
+    // 7. Test manual toggle device override (turn work1-fan-1 ON manually at after-hours)
+    console.log('\n--- Test Manual Device Override (After-Hours) ---');
+    const time8Manual = new Date();
+    time8Manual.setHours(8, 0, 0, 0);
+    setSimulatedTime(time8Manual);
+
+    const { manualToggleDevice, setSimulatorHour } = require('../modules/simulator/simulator.service');
+    const overrideDevice = await manualToggleDevice('work1-fan-1', 'on');
+    assert(overrideDevice.status === 'on', 'Device work1-fan-1 should be ON after manual override');
+
+    const manualAlerts = await Alert.find({ type: 'after-hours', scope: 'work1-fan-1', resolvedAt: null });
+    assert(manualAlerts.length === 1, 'Manual override to ON during after-hours should trigger an after-hours alert');
+
+    // 8. Test virtual clock jumps (set simulator hour to 9:00 AM)
+    console.log('\n--- Test Virtual Clock Jump to 9:00 AM ---');
+    await setSimulatorHour(9);
+    const resolvedManualAlerts = await Alert.find({ type: 'after-hours', scope: 'work1-fan-1', resolvedAt: { $ne: null } });
+    assert(resolvedManualAlerts.length === 1, 'Jumping clock to 9:00 AM (office hours) should resolve manual after-hours alert');
+
     console.log('\nAll simulation tests passed successfully! 🎉');
     await mongoose.connection.close();
     process.exit(0);

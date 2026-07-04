@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { deviceRouter } from './modules/device/device.router';
 import { alertRouter } from './modules/alert/alert.router';
 import { usageRouter } from './modules/usage/usage.router';
+import { simulatorRouter } from './modules/simulator/simulator.router';
 import { sendResponse } from './utils/response';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.get('/', (req, res) => {
 app.use('/api/devices', deviceRouter);
 app.use('/api/alerts', alertRouter);
 app.use('/api/usage', usageRouter);
+app.use('/api/simulator', simulatorRouter);
 
 // Fallback Route for 404
 app.use((req, res) => {
