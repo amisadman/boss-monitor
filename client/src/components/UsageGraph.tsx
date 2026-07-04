@@ -26,12 +26,13 @@ export default function UsageGraph() {
       ).then((res) => res.json());
       return result?.data || [];
     },
+    refetchInterval: 30000,
   });
 
   return (
     <div className="p-2 pt-2 pb-1 overflow-y-auto">
       <h3 className="text-lg font-semibold flex items-center gap-3 mb-3">
-        Usage graph
+        Usage graph (Last 24 hours)
       </h3>
 
       {isLoading ? (

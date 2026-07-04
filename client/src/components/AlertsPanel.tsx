@@ -1,15 +1,16 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import type { Alert } from "../types";
+import moment from "moment";
 
-function timeAgo(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ago`;
-}
+// function timeAgo(iso: string): string {
+//   const diffMs = Date.now() - new Date(iso).getTime();
+//   const mins = Math.floor(diffMs / 60000);
+//   if (mins < 1) return "just now";
+//   if (mins < 60) return `${mins}m ago`;
+//   const hrs = Math.floor(mins / 60);
+//   return `${hrs}h ago`;
+// }
 
 export default function AlertsPanel() {
   const queryClient = useQueryClient();
@@ -78,7 +79,8 @@ export default function AlertsPanel() {
               <p className="text-xs text-amber-700 mt-0.5">
                 {alert.type === "after-hours" ? "After Hours" : "Prolonged On"}
                 {" · "}
-                {timeAgo(alert.triggeredAt)}
+                {/* {timeAgo(alert.triggeredAt)} */}
+                {moment(alert.triggeredAt).format("hh:mma, DD MMM YYYY")}
               </p>
             </div>
 

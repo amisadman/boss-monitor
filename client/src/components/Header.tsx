@@ -65,7 +65,7 @@ function Header() {
     <header className="w-full bg-base-200 sticky top-0 z-50 shadow-sm">
       <div className="w-full max-w-7xl mx-auto px-3 h-20 flex items-center justify-between gap-5">
         <span
-          className="flex items-center gap-2 font-bold text-success text-base tooltip tooltip-right"
+          className="hidden md:flex items-center gap-2 font-bold text-success text-base tooltip tooltip-right"
           data-tip="UI is based on real-time simulated data"
         >
           <span className="w-2 aspect-square block rounded-full bg-green-500 animate-pulse"></span>
@@ -101,8 +101,8 @@ function Header() {
           </label>
 
           <span
-            className="flex items-center gap-1 font-medium min-w-25 px-2 py-1.5 bg-secondary/10 border border-secondary/5 rounded-lg tooltip tooltip-bottom"
-            data-tip="Simulation time"
+            className="flex items-center gap-1 font-medium min-w-25 px-2 py-1.5 bg-secondary/10 border border-secondary/5 rounded-lg tooltip tooltip-left"
+            data-tip="Simulation time: 24hrs = 12mins IRL"
           >
             <ClockIcon weight="bold" />
             <span className="-mt-0.5">{displayTime}</span>

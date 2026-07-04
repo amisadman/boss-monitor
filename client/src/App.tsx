@@ -177,7 +177,7 @@ export default function App() {
           </section>
 
           {/* RIGHT - Sidebar (absolutely positioned; height locked to map's height) */}
-          <section className="md:absolute md:top-0 md:right-0 h-full md:w-1/3 flex flex-col overflow-hidden bg-base-300/20 p-3 pt-0">
+          <section className="md:absolute md:top-0 md:right-0 h-full md:w-1/3 flex flex-col overflow-hidden bg-base-300/20 md:p-3 pt-0">
             <div className="w-full flex p-1 pt-0 gap-2">
               <button
                 onClick={() => setTab("meter")}
@@ -220,7 +220,7 @@ export default function App() {
                             key={room}
                             className={`flex flex-col-reverse items-center text-sm p-3 ${index === 1 ? "border-x" : "border-none"} border-slate-200 flex-1`}
                           >
-                            <span className="capitalize">
+                            <span className="capitalize text-center">
                               {room === "DrawingRoom"
                                 ? "Drawing Room"
                                 : room === "WorkRoom1"
