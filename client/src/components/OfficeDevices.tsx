@@ -1,5 +1,6 @@
 import type { Device } from "../types";
 import officeMapSvg from "/OfficeMap.svg";
+// import officeMapSvg from "/OfficeMapAutocad.jpg";
 
 // ---------------------------------------------------------------------------
 // Types

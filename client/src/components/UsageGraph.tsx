@@ -29,17 +29,21 @@ export default function UsageGraph() {
   });
 
   return (
-    <div className="p-5 pt-2 pb-1 overflow-y-auto">
+    <div className="p-2 pt-2 pb-1 overflow-y-auto">
       <h3 className="text-lg font-semibold flex items-center gap-3 mb-3">
         Usage graph
       </h3>
 
       {isLoading ? (
-        <div className="text-sm text-zinc-400">Loading usage history...</div>
+        <div className="text-sm text-zinc-400 block py-5 text-center">
+          Loading usage history...
+        </div>
       ) : isError ? (
         <div className="text-sm text-red-500">Error loading usage history</div>
       ) : !data || data.length === 0 ? (
-        <div className="text-sm text-zinc-400">No usage data yet</div>
+        <div className="text-sm text-zinc-400 block py-5 text-center">
+          No usage data yet
+        </div>
       ) : (
         <div className="w-full h-64">
           <ResponsiveContainer width="100%" height="100%">
