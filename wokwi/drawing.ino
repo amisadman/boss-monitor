@@ -8,10 +8,14 @@
 
 const float MAINS_VOLTAGE = 220.0;
 
+bool fan1 = false;
+bool fan2 = false;
+bool light1 = false;
+bool light2 = false;
+bool light3 = false;
+
 void setup() {
   Serial.begin(115200);
-  Serial.println("--- Boss Monitor ESP32 Room Controller Started ---");
-
   randomSeed(analogRead(UNUSED_ANALOG_PIN));
 
   pinMode(FAN1_PIN, OUTPUT);
@@ -33,41 +37,48 @@ void loop() {
   if (millis() - lastToggle > 5000) {
     lastToggle = millis();
 
-    bool fan1 = random(2);
-    bool fan2 = random(2);
-    bool light1 = random(2);
-    bool light2 = random(2);
-    bool light3 = random(2);
+    fan1   = random(2);
+    fan2   = random(2);
+    light1 = random(2);
+    light2 = random(2);
+    light3 = random(2);
 
-    digitalWrite(FAN1_PIN, fan1 ? HIGH : LOW);
-    digitalWrite(FAN2_PIN, fan2 ? HIGH : LOW);
+    digitalWrite(FAN1_PIN,   fan1   ? HIGH : LOW);
+    digitalWrite(FAN2_PIN,   fan2   ? HIGH : LOW);
     digitalWrite(LIGHT1_PIN, light1 ? HIGH : LOW);
     digitalWrite(LIGHT2_PIN, light2 ? HIGH : LOW);
     digitalWrite(LIGHT3_PIN, light3 ? HIGH : LOW);
 
-    Serial.println("\n[Action] Device States Randomized:");
-    Serial.printf(" - Fan 1: %s | Fan 2: %s\n", fan1 ? "ON" : "OFF", fan2 ? "ON" : "OFF");
-    Serial.printf(" - Light 1: %s | Light 2: %s | Light 3: %s\n", 
-                  light1 ? "ON" : "OFF", light2 ? "ON" : "OFF", light3 ? "ON" : "OFF");
+    int rawADC = analogRead(CURRENT_SENSOR_PIN);
+    float sensorVoltage = (rawADC / 4095.0) * 3.3;
+    float currentAmps = abs(sensorVoltage - 1.65) / 0.185;
+    float totalPowerWatts = currentAmps * MAINS_VOLTAGE;
+
+    char json[512];
+    snprintf(json, sizeof(json),
+      "{\n"
+      "  \"room\": \"WorkRoom2\",\n"
+      "  \"devices\": [\n"
+      "    { \"deviceId\": \"work2-fan-1\",   \"status\": \"%s\" },\n"
+      "    { \"deviceId\": \"work2-fan-2\",   \"status\": \"%s\" },\n"
+      "    { \"deviceId\": \"work2-light-1\", \"status\": \"%s\" },\n"
+      "    { \"deviceId\": \"work2-light-2\", \"status\": \"%s\" },\n"
+      "    { \"deviceId\": \"work2-light-3\", \"status\": \"%s\" }\n"
+      "  ],\n"
+      "  \"currentAmps\": %.2f,\n"
+      "  \"totalWatts\": %.2f\n"
+      "}",
+      fan1   ? "on" : "off",
+      fan2   ? "on" : "off",
+      light1 ? "on" : "off",
+      light2 ? "on" : "off",
+      light3 ? "on" : "off",
+      currentAmps,
+      totalPowerWatts
+    );
+
+    Serial.println(json);
   }
-
-  int rawADC = analogRead(CURRENT_SENSOR_PIN);
-  
-  float sensorVoltage = (rawADC / 4095.0) * 3.3;
-  
-  // Use absolute difference from the 1.65V offset.
-  // This allows the slider to read current in both directions.
-  float currentAmps = abs(sensorVoltage - 1.65) / 0.185;
-  
-  float totalPowerWatts = currentAmps * MAINS_VOLTAGE;
-
-  Serial.print("Sensor Voltage: ");
-  Serial.print(sensorVoltage);
-  Serial.print("V | Current: ");
-  Serial.print(currentAmps);
-  Serial.print("A | Total Room Power Draw: ");
-  Serial.print(totalPowerWatts);
-  Serial.println("W");
 
   delay(1000);
 }
