@@ -1,5 +1,8 @@
+import { useState } from "react";
 import type { Device } from "../types";
+import officeMapCircuit from "/electriclayout.png";
 import officeMapSvg from "/OfficeMap.svg";
+import { CircuitryIcon, PaintBrushBroadIcon } from "@phosphor-icons/react";
 // import officeMapSvg from "/OfficeMapAutocad.jpg";
 
 // ---------------------------------------------------------------------------
@@ -70,7 +73,6 @@ interface LightProps {
 export function Light({ isOn, label }: LightProps) {
   return (
     <div
-      title={label}
       style={{
         position: "relative",
         width: 36,
@@ -79,6 +81,8 @@ export function Light({ isOn, label }: LightProps) {
         alignItems: "center",
         justifyContent: "center",
       }}
+      className="tooltip tooltip-bottom"
+      data-tip={label}
     >
       {isOn && (
         <div
@@ -123,7 +127,6 @@ interface FanProps {
 export function Fan({ isOn, label }: FanProps) {
   return (
     <div
-      title={label}
       style={{
         width: 100,
         height: 100,
@@ -131,6 +134,8 @@ export function Fan({ isOn, label }: FanProps) {
         alignItems: "center",
         justifyContent: "center",
       }}
+      className="tooltip tooltip-bottom"
+      data-tip={label}
     >
       <svg
         width="70"
@@ -165,6 +170,9 @@ interface OfficeMapProps {
 }
 
 export default function OfficeMap({ devices = [] }: OfficeMapProps) {
+  // States
+  const [circuitMode, setCircuitMode] = useState(false);
+
   return (
     <div
       style={{
@@ -187,7 +195,7 @@ export default function OfficeMap({ devices = [] }: OfficeMapProps) {
       `}</style>
 
       <img
-        src={officeMapSvg}
+        src={circuitMode ? officeMapCircuit : officeMapSvg}
         alt="Office floor plan"
         style={{
           position: "absolute",
@@ -226,6 +234,31 @@ export default function OfficeMap({ devices = [] }: OfficeMapProps) {
           </div>
         );
       })}
+
+      <div className="flex flex-row absolute top-2 left-1/2 -translate-x-1/2 rounded-sm overflow-hidden shadow-lg">
+        <button
+          className={`block p-1.5 ${circuitMode ? "bg-cyan-300" : "bg-white"} shadow-lg cursor-pointer`}
+          onClick={() => setCircuitMode((prev) => !prev)}
+          title="Circuit Mode"
+        >
+          <CircuitryIcon
+            weight="duotone"
+            size={24}
+            color={!circuitMode ? "#2bdcff" : "#fff"}
+          />
+        </button>
+        <button
+          className={`block p-1.5 ${!circuitMode ? "bg-teal-400" : "bg-white"} shadow-lg cursor-pointer`}
+          onClick={() => setCircuitMode((prev) => !prev)}
+          title="Hide Circuit"
+        >
+          <PaintBrushBroadIcon
+            weight="duotone"
+            size={24}
+            color={circuitMode ? "#00d5be" : "#fff"}
+          />
+        </button>
+      </div>
     </div>
   );
 }

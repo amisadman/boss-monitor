@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import UsageGraph from "./components/UsageGraph";
 import Footer from "./components/Footer";
+import TimeTraveller from "./components/TimeTraveller";
 
 const ROOM_META: Record<
   "DrawingRoom" | "WorkRoom1" | "WorkRoom2",
@@ -168,7 +169,7 @@ export default function App() {
               <div className="w-full">
                 <OfficeMap devices={devices} />
 
-                <div className="text-xs text-success flex items-center gap-2 bg-background rounded-sm px-2 py-1.5 absolute top-2 right-2 font-medium shadow-xs">
+                <div className="text-xs text-success flex items-center gap-2 bg-background rounded-sm px-2 py-1.5 absolute top-2 right-2 font-medium shadow-xs border border-base-200">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   {totalDevicesOn} devices ON
                 </div>
@@ -177,7 +178,7 @@ export default function App() {
           </section>
 
           {/* RIGHT - Sidebar (absolutely positioned; height locked to map's height) */}
-          <section className="md:absolute md:top-0 md:right-0 h-full md:w-1/3 flex flex-col overflow-hidden bg-base-300/20 md:p-3 pt-0">
+          <section className="md:absolute md:top-0 md:right-0 h-full md:w-1/3 flex flex-col overflow-hidden bg-base-300/20 md:p-3 pt-0 md:pt-0">
             <div className="w-full flex p-1 pt-0 gap-2">
               <button
                 onClick={() => setTab("meter")}
@@ -285,6 +286,7 @@ export default function App() {
       </main>
 
       <Footer />
+      <TimeTraveller />
     </>
   );
 }
