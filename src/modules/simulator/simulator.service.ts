@@ -10,6 +10,7 @@ let simulatedTime = new Date();
 simulatedTime.setHours(8, 0, 0, 0); // Start at 8:00 AM today
 
 let simulatorInterval: NodeJS.Timeout | null = null;
+let wasOfficeHours: boolean | null = null;
 
 export const getSimulatedTime = (): Date => {
   return simulatedTime;
@@ -18,6 +19,8 @@ export const getSimulatedTime = (): Date => {
 // For testing purposes
 export const setSimulatedTime = (time: Date): void => {
   simulatedTime = time;
+  // Reset transitions on manual time set
+  wasOfficeHours = null;
 };
 
 export const runSimulationTick = async (): Promise<void> => {
@@ -34,6 +37,10 @@ export const runSimulationTick = async (): Promise<void> => {
     const hour = simulatedTime.getHours();
     const isOfficeHours = hour >= simulatorConfig.officeStartHour && hour < simulatorConfig.officeEndHour;
     
+    // Transition detection
+    const transitionToAfterHours = wasOfficeHours === true && !isOfficeHours;
+    wasOfficeHours = isOfficeHours;
+
     logger.info(`Simulator Tick - Virtual Time: ${simulatedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${isOfficeHours ? 'Office Hours' : 'After Hours'})`);
 
     // 2. Fetch all devices
@@ -45,18 +52,32 @@ export const runSimulationTick = async (): Promise<void> => {
 
     // 3. Mutate device states (Parallel DB Writes)
     const savePromises = devices.map(async (device) => {
-      let shouldBeOn = false;
+      let shouldBeOn = device.status === 'on';
 
       // Special Demo Rule: Force Work Room 1 devices to stay ON between 10:00 AM and 1:00 PM
       // to trigger the prolonged-on alert (on for >2 hours).
       if (device.room === 'WorkRoom1' && hour >= 10 && hour < 13) {
         shouldBeOn = true;
       } else if (isOfficeHours) {
-        // Office hours probability: 80% on
-        shouldBeOn = Math.random() < simulatorConfig.officeHoursOnProbability;
+        // Office hours: sticky transitions to prevent rapid toggling
+        if (device.status === 'on') {
+          // 90% chance to stay ON
+          shouldBeOn = Math.random() < 0.90;
+        } else {
+          // 20% chance to turn ON (80% chance to stay OFF)
+          shouldBeOn = Math.random() < 0.20;
+        }
+      } else if (transitionToAfterHours) {
+        // Evening close transition (at 5:00 PM close)
+        if (device.status === 'on') {
+          // 15% chance to stay ON (85% chance to turn OFF)
+          shouldBeOn = Math.random() < 0.15;
+        } else {
+          shouldBeOn = false;
+        }
       } else {
-        // After hours probability: 10% on
-        shouldBeOn = Math.random() < simulatorConfig.afterHoursOnProbability;
+        // Overnight hold (5:00 PM - 9:00 AM): Lock current state
+        shouldBeOn = device.status === 'on';
       }
 
       const nextStatus = shouldBeOn ? 'on' : 'off';
