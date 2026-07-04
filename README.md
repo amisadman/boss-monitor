@@ -103,6 +103,9 @@ Boss Monitor is a real-time energy monitoring and alert system designed for mode
 
 ## 5. API Reference
 
+*   **Production Live API Base URL:** [https://boss-monitor.onrender.com](https://boss-monitor.onrender.com)
+*   **Local Development Base URL:** `http://localhost:5000`
+
 All REST endpoints return standardized payloads in the following format:
 ```json
 {
