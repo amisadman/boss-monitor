@@ -33,7 +33,6 @@ export const seedDevices = async (): Promise<void> => {
   try {
     const count = await Device.countDocuments();
 
-    // Check if there are legacy room names in the DB
     const hasLegacyRooms = await Device.findOne({
       room: { $in: ['drawing', 'work1', 'work2'] },
     });
@@ -50,7 +49,6 @@ export const seedDevices = async (): Promise<void> => {
       console.log(`DB already contains ${count} devices. Skipping seeding.`);
     }
 
-    // Check if there are legacy snapshots in UsageHistory
     const hasLegacySnapshots = await UsageHistory.findOne({
       $or: [
         { 'perRoomWatts.drawing': { $exists: true } },
@@ -69,11 +67,9 @@ export const seedDevices = async (): Promise<void> => {
   }
 };
 
-// If run directly via node/ts-node
 if (require.main === module) {
   const runStandalone = async () => {
     await connectDB();
-    // Clean seed
     await Device.deleteMany({});
     console.log('Cleared existing devices.');
     await seedDevices();

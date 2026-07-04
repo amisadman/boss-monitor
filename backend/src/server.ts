@@ -10,23 +10,16 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // 1. Connect to Database
     await connectDB();
-
-    // 2. Seed initial devices if empty
     await seedDevices();
 
-    // 3. Create HTTP Server
     const server = http.createServer(app);
 
-    // 4. Initialize Socket.io
     initSocket(server);
     logger.info('Socket.io initialized successfully');
 
-    // 5. Start Simulator Service
     await startSimulator();
 
-    // 6. Listen on PORT
     server.listen(PORT, () => {
       logger.info(`Server is running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
     });

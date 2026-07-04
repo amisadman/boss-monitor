@@ -116,19 +116,27 @@ All REST endpoints return standardized payloads in the following format:
 ### Endpoints
 
 *   **`GET /`**
-    Returns dynamic server health status, client IP, and application uptime.
+    Returns server details, client details, health status, and backend uptime.
 *   **`GET /api/devices`**
-    Fetches all 15 devices (supports sorting/filtering via `QueryBuilder`).
+    Fetches all 15 office devices (supports sorting/filtering via `QueryBuilder`).
 *   **`GET /api/devices/rooms/:room`**
-    Fetches all devices in a specific room (`drawing`, `work1`, `work2`).
+    Fetches all devices in a specific room (`DrawingRoom`, `WorkRoom1`, `WorkRoom2`).
 *   **`GET /api/usage`**
-    Fetches the live room-wise wattage breakdown, projected kWh consumed, cost calculations (BDT), and current `simulatedTime`.
+    Fetches the live room-wise wattage breakdown, projected daily kWh, estimated daily costs (BDT), and current simulated clock time.
 *   **`GET /api/usage/history`**
-    Fetches the last 50 usage snapshots (useful for frontend line charts).
+    Retrieves the last 50 usage snapshots (used to populate the main dashboard line chart).
+*   **`GET /api/usage/hourly`**
+    Retrieves aggregated room-by-room averages for the last 24 simulated hours (dynamically aligned to the simulator clock).
 *   **`GET /api/alerts`**
-    Fetches active and historic alert logs.
+    Fetches active and historical alerts (triggered by rule violations).
 *   **`POST /api/alerts/:id/ack`**
-    Acknowledges an alert, setting `notifiedDiscord: true`. Used by the Discord bot to prevent spamming notifications.
+    Acknowledges an alert to prevent Discord message notification spam.
+*   **`POST /api/simulator/device`**
+    Manually overrides a device status (`on` or `off`), triggers instant Socket.io updates, and re-evaluates rules.
+    *   *Payload:* `{ "deviceId": "drawing-fan-1", "status": "on" }`
+*   **`POST /api/simulator/time`**
+    Jumps the simulator's virtual clock to a specific hour (0-23) to test transition rule changes.
+    *   *Payload:* `{ "hour": 17 }`
 
 ---
 
@@ -153,24 +161,30 @@ The simulator runs inside the backend process on an interval of `10 seconds` (re
 
 ---
 
-## 8. Hardware / ESP32 Controller (Room 1)
+## 8. Hardware / ESP32 Controller Simulations
 
-**Wokwi Simulation Project Link:** [ESP32 Room 1 Controller](https://wokwi.com/projects/468547829392730113)
+For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](file:///d:/Coading/hackathon/boss-monitor/wokwi/README.md).
 
-A standalone conceptual controller is designed in Wokwi utilizing an ESP32 to represent **Work Room 1** (2 fans and 3 lights).
+### Live Wokwi Simulation Projects
 
-### ESP32 Pin-Mapping
+| Room | Wokwi Project Simulation URL |
+| :--- | :--- |
+| **Drawing Room** | [Drawing Room Simulation](https://wokwi.com/projects/468547829392730113) |
+| **Work Room 1** | [Work Room 1 Simulation](https://wokwi.com/projects/468601813237379073) |
+| **Work Room 2** | [Work Room 2 Simulation](https://wokwi.com/projects/468602256710643713) |
+
+### ESP32 Pin-Mapping (Standardized)
 
 | Component | ESP32 GPIO | Description |
 | :--- | :--- | :--- |
-| **Fan 1** | `GPIO 16` | Drives Relay 1 IN (Active HIGH) |
-| **Fan 2** | `GPIO 17` | Drives Relay 2 IN (Active HIGH) |
-| **Light 1** | `GPIO 18` | Drives Relay 3 IN (Active HIGH) |
-| **Light 2** | `GPIO 19` | Drives Relay 4 IN (Active HIGH) |
-| **Light 3** | `GPIO 21` | Drives Relay 5 IN (Active HIGH) |
-| **ACS712 OUT** | `GPIO 34` | Potentiometer input simulating analog current |
+| **Fan 1 Relay** | `GPIO 16` | Active HIGH Relay Control |
+| **Fan 2 Relay** | `GPIO 17` | Active HIGH Relay Control |
+| **Light 1 Relay** | `GPIO 18` | Active HIGH Relay Control |
+| **Light 2 Relay** | `GPIO 19` | Active HIGH Relay Control |
+| **Light 3 Relay** | `GPIO 21` | Active HIGH Relay Control |
+| **ACS712 Output** | `GPIO 34 (VP)` | Potentiometer input simulating analog current |
 
-### ACS712 Current Calculation
-At 0 Amps, the ACS712 outputs `Vcc / 2` (`1.65V`). The ESP32 code reads the analog ADC voltage on GPIO 34 and performs calculations to compute live wattage:
-$$\text{Current (Amps)} = \frac{\text{Sensor Voltage} - 1.65\text{V}}{0.185\text{V/A}}$$
-$$\text{Power (Watts)} = \text{Current (Amps)} \times 220\text{V (Mains AC)} $$
+### Current Sensor Simulation Calculation
+At 0 Amps, the simulated ACS712 current sensor outputs `1.65V` (half of Vcc). The firmware reads this analog voltage and calculates:
+$$\text{Current (Amps)} = \frac{|\text{Sensor Voltage} - 1.65\text{V}|}{0.185\text{V/A}}$$
+$$\text{Power (Watts)} = \text{Current (Amps)} \times 220\text{V (Bangladesh AC Mains)} $$
