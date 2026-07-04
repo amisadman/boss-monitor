@@ -32,7 +32,7 @@ export const triggerAlert = async (
 
   await newAlert.save();
 
-  // Broadcast to all dashboard clients with an intentional 1.5s delay
+  // Broadcast to all dashboard clients with an intentional 2.5s delay
   setTimeout(() => {
     try {
       const io = getIO();
@@ -40,7 +40,7 @@ export const triggerAlert = async (
     } catch (err) {
       // Socket io might not be initialized (e.g. during script validation tests)
     }
-  }, 1500);
+  }, 2500);
 
   return newAlert;
 };
@@ -56,7 +56,7 @@ export const resolveAlert = async (
   activeAlert.resolvedAt = simulatedTime;
   await activeAlert.save();
 
-  // Broadcast to all dashboard clients with an intentional 1.5s delay
+  // Broadcast to all dashboard clients with an intentional 2.5s delay
   setTimeout(() => {
     try {
       const io = getIO();
@@ -64,7 +64,7 @@ export const resolveAlert = async (
     } catch (err) {
       // Socket io not initialized
     }
-  }, 1500);
+  }, 2500);
 
   return activeAlert;
 };
