@@ -12,6 +12,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.3.2",
+    "@tanstack/react-query": "^5.101.2",
     "moment": "^2.30.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

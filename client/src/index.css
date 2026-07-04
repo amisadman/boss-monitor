@@ -12,3 +12,33 @@
   --color-danger: #ef4444;
   --color-background: #f8fafc;
 }
+
+.floor-plan-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background: #ecf0f1;
+  border-radius: 12px;
+}
+
+.floor-svg {
+  max-width: 100%;
+  height: auto;
+  border: 3px solid #2c3e50;
+  border-radius: 12px;
+  background: #f8f1e9;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fan-blades {
+  transition: all 0.4s ease;
+}
