@@ -9,6 +9,12 @@ export const acknowledgeAlert = async (id: string): Promise<IAlert | null> => {
   return await Alert.findByIdAndUpdate(id, { notifiedDiscord: true }, { new: true });
 };
 
+let suppressSocketEmissions = false;
+
+export const setSuppressSocketEmissions = (suppress: boolean): void => {
+  suppressSocketEmissions = suppress;
+};
+
 export const triggerAlert = async (
   type: 'after-hours' | 'prolonged-on',
   scope: string,
@@ -32,12 +38,16 @@ export const triggerAlert = async (
 
   await newAlert.save();
 
-  // Broadcast to all dashboard clients
-  try {
-    const io = getIO();
-    io.emit('alert:new', newAlert);
-  } catch (err) {
-    // Socket io might not be initialized (e.g. during script validation tests)
+  if (!suppressSocketEmissions) {
+    // Broadcast to all dashboard clients with an intentional 2.5s delay
+    setTimeout(() => {
+      try {
+        const io = getIO();
+        io.emit('alert:new', newAlert);
+      } catch (err) {
+        // Socket io might not be initialized (e.g. during script validation tests)
+      }
+    }, 2500);
   }
 
   return newAlert;
@@ -54,11 +64,16 @@ export const resolveAlert = async (
   activeAlert.resolvedAt = simulatedTime;
   await activeAlert.save();
 
-  try {
-    const io = getIO();
-    io.emit('alert:resolved', activeAlert);
-  } catch (err) {
-    // Socket io not initialized
+  if (!suppressSocketEmissions) {
+    // Broadcast to all dashboard clients with an intentional 2.5s delay
+    setTimeout(() => {
+      try {
+        const io = getIO();
+        io.emit('alert:resolved', activeAlert);
+      } catch (err) {
+        // Socket io not initialized
+      }
+    }, 2500);
   }
 
   return activeAlert;
