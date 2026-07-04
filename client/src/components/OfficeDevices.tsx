@@ -12,12 +12,12 @@ interface Position {
   y: number;
 }
 
-interface RoomBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+// interface RoomBounds {
+//   x: number;
+//   y: number;
+//   width: number;
+//   height: number;
+// }
 
 // ---------------------------------------------------------------------------
 // Shared coordinate system (native units from the exported SVG)
@@ -26,11 +26,11 @@ const SVG_WIDTH = 1560;
 const SVG_HEIGHT = 1000;
 
 // Room bounding boxes (for reference / future use, e.g. hit-testing, labels)
-export const ROOMS: Record<string, RoomBounds> = {
-  drawing: { x: 35, y: 36, width: 476, height: 653 },
-  work1: { x: 542, y: 36, width: 476, height: 653 },
-  work2: { x: 1049, y: 36, width: 476, height: 653 },
-};
+// const ROOMS: Record<string, RoomBounds> = {
+//   drawing: { x: 35, y: 36, width: 476, height: 653 },
+//   work1: { x: 542, y: 36, width: 476, height: 653 },
+//   work2: { x: 1049, y: 36, width: 476, height: 653 },
+// };
 
 // Hand-placed device positions (in native SVG units) chosen to sit in open
 // ceiling space around the desk/table clusters in each room. Tweak the x/y

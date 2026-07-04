@@ -29,7 +29,7 @@ export default function UsageGraph() {
   });
 
   return (
-    <div className="p-5 pb-1 overflow-y-auto">
+    <div className="p-5 pt-2 pb-1 overflow-y-auto">
       <h3 className="text-lg font-semibold flex items-center gap-3 mb-3">
         Usage graph
       </h3>
@@ -77,7 +77,7 @@ export default function UsageGraph() {
                   borderRadius: 6,
                   border: "1px solid #e5e7eb",
                 }}
-                formatter={(value: number) => [`${value}W`, "Avg Watts"]}
+                formatter={(value) => [`${value}W`, "Avg Watts"]}
               />
               <Area
                 type="monotone"

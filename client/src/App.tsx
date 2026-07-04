@@ -104,7 +104,7 @@ export default function App() {
 
             {/* Power Meter */}
             {tab === "meter" ? (
-              <div className="p-5 pb-1 overflow-y-auto">
+              <div className="p-5 pt-2 pb-1 overflow-y-auto">
                 <h3 className="text-lg font-semibold flex items-center gap-3">
                   Power Meter
                 </h3>
