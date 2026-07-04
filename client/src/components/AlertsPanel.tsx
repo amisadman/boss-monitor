@@ -51,7 +51,11 @@ export default function AlertsPanel() {
     return <div className="text-sm text-red-500">Error loading alerts</div>;
 
   if (activeAlerts.length === 0) {
-    return <div className="text-sm text-zinc-400">No active alerts</div>;
+    return (
+      <div className="text-sm text-zinc-400 block py-5 text-center">
+        No active alerts
+      </div>
+    );
   }
 
   return (

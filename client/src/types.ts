@@ -1,4 +1,4 @@
-export type Room = "drawing" | "work1" | "work2";
+export type Room = "DrawingRoom" | "WorkRoom1" | "WorkRoom2";
 export type DeviceType = "fan" | "light";
 
 export interface Device {
@@ -27,4 +27,6 @@ export interface UsageResponse {
   totalWattsNow: number;
   perRoomWatts: Record<Room, number>;
   estimatedKwhToday: number;
+  estimatedCostToday: number;
+  simulatedTime: string;
 }
