@@ -1,7 +1,8 @@
 import { Device, IDevice } from '../device/device.model';
 import { Alert } from '../alert/alert.model';
-import { triggerAlert, resolveAlert } from '../alert/alert.service';
+import { triggerAlert, resolveAlert, setSuppressSocketEmissions } from '../alert/alert.service';
 import { saveUsageSnapshot, getUsageSummary } from '../usage/usage.service';
+import { UsageHistory } from '../usage/usage.model';
 import { getIO } from '../../utils/socket';
 import { logger } from '../../utils/logger';
 import { simulatorConfig } from './simulator.config';
@@ -11,6 +12,7 @@ simulatedTime.setHours(8, 0, 0, 0); // Start at 8:00 AM today
 
 let simulatorInterval: NodeJS.Timeout | null = null;
 let wasOfficeHours: boolean | null = null;
+let isFastForwarding = false;
 
 export const getSimulatedTime = (): Date => {
   return simulatedTime;
@@ -123,15 +125,17 @@ export const runSimulationTick = async (): Promise<void> => {
     const summary = await getUsageSummary(simulatedTime);
 
     // 6. Broadcast snapshot to dashboard clients via Socket.io IMMEDIATELY
-    try {
-      const io = getIO();
-      io.emit('device:update', {
-        devices: updatedDevices,
-        simulatedTime,
-        ...summary,
-      });
-    } catch (err) {
-      // Socket.io not initialized
+    if (!isFastForwarding) {
+      try {
+        const io = getIO();
+        io.emit('device:update', {
+          devices: updatedDevices,
+          simulatedTime,
+          ...summary,
+        });
+      } catch (err) {
+        // Socket.io not initialized
+      }
     }
 
     // 5. Save usage snapshot in background (asynchronously, do not block)
@@ -193,7 +197,7 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
   }
 };
 
-export const startSimulator = (): void => {
+export const startSimulator = async (): Promise<void> => {
   const tickRateMs = Number(process.env.SIMULATOR_TICK_RATE_MS) || 10000;
   
   if (simulatorInterval) {
@@ -201,9 +205,39 @@ export const startSimulator = (): void => {
   }
   
   logger.info(`Starting Simulator Service - Tick Rate: ${tickRateMs}ms`);
+
+  try {
+    const historyCount = await UsageHistory.countDocuments();
+    if (historyCount < 72) {
+      logger.info(`Usage history count is ${historyCount}. Initiating 24-hour fast-forward catch-up...`);
+      isFastForwarding = true;
+      setSuppressSocketEmissions(true);
+
+      // Clear existing partial history
+      await UsageHistory.deleteMany({});
+
+      // Set simulator time to 24 hours ago
+      const nowTime = new Date();
+      const startTime = new Date(nowTime.getTime() - 24 * 60 * 60 * 1000);
+      setSimulatedTime(startTime);
+
+      // Run 72 ticks to simulate 24 hours of activity (20 mins per tick)
+      for (let i = 0; i < 72; i++) {
+        await runSimulationTick();
+      }
+
+      isFastForwarding = false;
+      setSuppressSocketEmissions(false);
+      logger.info('24-hour fast-forward catch-up completed successfully.');
+    }
+  } catch (err) {
+    logger.error('Error during simulator fast-forward catch-up:', err);
+    isFastForwarding = false;
+    setSuppressSocketEmissions(false);
+  }
   
-  // Run first tick immediately
-  runSimulationTick();
+  // Run first regular tick immediately
+  await runSimulationTick();
   
   simulatorInterval = setInterval(runSimulationTick, tickRateMs);
 };

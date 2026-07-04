@@ -31,16 +31,30 @@ export const getUsageSummary = async (simulatedTime: Date): Promise<UsageSummary
     }
   });
 
-  // Calculate simulated hours passed today (since simulated midnight 00:00)
-  const hours = simulatedTime.getHours();
-  const minutes = simulatedTime.getMinutes();
-  const hoursSinceMidnight = hours + minutes / 60;
+  // Define simulated midnight of the current day
+  const midnight = new Date(simulatedTime);
+  midnight.setHours(0, 0, 0, 0);
 
-  // If midnight, use a small fraction to avoid 0 kWh or use baseline
-  const hoursForCalculation = hoursSinceMidnight > 0 ? hoursSinceMidnight : 0.01;
+  // Fetch all snapshots saved between midnight and now
+  const snapshotsToday = await UsageHistory.find({
+    timestamp: { $gte: midnight, $lte: simulatedTime },
+  });
 
-  // E.g., if totalWattsNow is 500W, running for 10 hours = 5000Wh = 5 kWh
-  const estimatedKwhToday = Number(((totalWattsNow * hoursForCalculation) / 1000).toFixed(3));
+  let estimatedKwhToday = 0;
+
+  if (snapshotsToday.length > 0) {
+    // Each snapshot represents 20 minutes (1/3 of an hour) of energy consumption
+    // Wh = totalWatts * (20 / 60) = totalWatts / 3
+    const totalWhToday = snapshotsToday.reduce((sum, snap) => sum + (snap.totalWatts / 3), 0);
+    estimatedKwhToday = Number((totalWhToday / 1000).toFixed(3));
+  } else {
+    // Fallback: estimate using current wattage and time passed since midnight
+    const hours = simulatedTime.getHours();
+    const minutes = simulatedTime.getMinutes();
+    const hoursSinceMidnight = hours + minutes / 60;
+    const hoursForCalculation = hoursSinceMidnight > 0 ? hoursSinceMidnight : 0.01;
+    estimatedKwhToday = Number(((totalWattsNow * hoursForCalculation) / 1000).toFixed(3));
+  }
 
   // Tariff rate: 12 BDT per kWh
   const tariffRate = 12;
