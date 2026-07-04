@@ -166,7 +166,7 @@ export default function App() {
             ) : devicesError ? (
               <div className="text-red-500">Error loading devices</div>
             ) : (
-              <div className="w-full">
+              <div className="w-full pt-12 md:pt-0">
                 <OfficeMap devices={devices} />
 
                 <div className="text-xs text-success flex items-center gap-2 bg-background rounded-sm px-2 py-1.5 absolute top-2 right-2 font-medium shadow-xs border border-base-200">

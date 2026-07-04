@@ -48,15 +48,15 @@ const POSITIONS: Record<string, Position> = {
   "drawing-fan-2": { x: 255, y: 550 },
 
   // Work1 (desk clusters around x570-950, y150-550)
-  "work1-light-1": { x: 620, y: 120 },
-  "work1-light-2": { x: 940, y: 120 },
+  "work1-light-1": { x: 620, y: 105 },
+  "work1-light-2": { x: 940, y: 105 },
   "work1-light-3": { x: 780, y: 600 },
   "work1-fan-1": { x: 778, y: 250 },
   "work1-fan-2": { x: 778, y: 470 },
 
   // Work2 (mirrors work1, shifted right)
-  "work2-light-1": { x: 1127, y: 120 },
-  "work2-light-2": { x: 1447, y: 120 },
+  "work2-light-1": { x: 1127, y: 105 },
+  "work2-light-2": { x: 1447, y: 105 },
   "work2-light-3": { x: 1287, y: 600 },
   "work2-fan-1": { x: 1300, y: 250 },
   "work2-fan-2": { x: 1300, y: 470 },
@@ -235,7 +235,7 @@ export default function OfficeMap({ devices = [] }: OfficeMapProps) {
         );
       })}
 
-      <div className="flex flex-row absolute top-2 left-1/2 -translate-x-1/2 rounded-sm overflow-hidden shadow-lg">
+      <div className="flex flex-row absolute -top-10 md:top-2 left-1/2 -translate-x-1/2 rounded-sm overflow-hidden shadow-lg">
         <button
           className={`block p-1.5 ${circuitMode ? "bg-cyan-300" : "bg-white"} shadow-lg cursor-pointer`}
           onClick={() => setCircuitMode((prev) => !prev)}

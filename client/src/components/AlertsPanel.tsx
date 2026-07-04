@@ -80,10 +80,7 @@ export default function AlertsPanel() {
                 {alert.type === "after-hours" ? "After Hours" : "Prolonged On"}
                 {" · "}
                 {/* {timeAgo(alert.triggeredAt)} */}
-                {moment
-                  .utc(alert.triggeredAt)
-                  .subtract(6, "hours")
-                  .format("hh:mma")}
+                {moment.utc(alert.triggeredAt).format("hh:mma")}
               </p>
             </div>
 
