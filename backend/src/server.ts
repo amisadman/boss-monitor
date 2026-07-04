@@ -24,7 +24,7 @@ const startServer = async () => {
     logger.info('Socket.io initialized successfully');
 
     // 5. Start Simulator Service
-    startSimulator();
+    await startSimulator();
 
     // 6. Listen on PORT
     server.listen(PORT, () => {
