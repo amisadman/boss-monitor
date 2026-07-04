@@ -14,7 +14,7 @@ function Header() {
   }, []);
 
   return (
-    <header className="w-full border-b">
+    <header className="w-full border-b border-x border-slate-200">
       <div className="w-full max-w-7xl mx-auto px-3 h-20 flex items-center justify-between gap-5">
         <span className="flex items-center gap-2 font-bold text-success text-base">
           <span className="w-2 aspect-square block rounded-full bg-green-500 animate-pulse"></span>

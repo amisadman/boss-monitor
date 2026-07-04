@@ -20,6 +20,7 @@ export interface Alert {
   message: string;
   triggeredAt: string;
   resolvedAt: string | null;
+  notifiedDiscord: boolean;
 }
 
 export interface UsageResponse {
