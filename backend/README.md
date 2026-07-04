@@ -104,7 +104,7 @@ Boss Monitor is a real-time energy monitoring and alert system designed for mode
 ## 5. API Reference
 
 *   **Production Live API Base URL:** [https://boss-monitor.onrender.com](https://boss-monitor.onrender.com)
-*   **API Response Examples:** Refer to [backend/api_responses.md](backend/api_responses.md) for real payload examples.
+*   **API Response Examples:** Refer to [api_responses.md](api_responses.md) for real payload examples.
 *   **Local Development Base URL:** `http://localhost:5000`
 
 All REST endpoints return standardized payloads in the following format:
@@ -167,7 +167,7 @@ The simulator runs inside the backend process on an interval of `10 seconds` (re
 
 ## 8. Hardware / ESP32 Controller Simulations
 
-For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](wokwi/README.md).
+For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](../wokwi/README.md).
 
 ### Live Wokwi Simulation Projects
 
