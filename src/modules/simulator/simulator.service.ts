@@ -142,7 +142,8 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
   if (!isOfficeHours) {
     for (const device of devices) {
       if (device.status === 'on') {
-        const message = `${device.label} left ON in ${device.room} room after hours.`;
+        const roomDisplay = device.room === 'DrawingRoom' ? 'Drawing Room' : device.room === 'WorkRoom1' ? 'Work Room 1' : 'Work Room 2';
+        const message = `${device.label} in ${roomDisplay} was left on outside working hours`;
         await triggerAlert('after-hours', device.deviceId, message, simulatedTime);
       } else {
         await resolveAlert('after-hours', device.deviceId, simulatedTime);
