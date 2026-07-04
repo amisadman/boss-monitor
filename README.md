@@ -1,35 +1,32 @@
 # Boss Monitor — Smart Office Energy Tracker
 
-Boss Monitor is a real-time energy monitoring and alert system designed for modern smart offices. The project implements a unified Express + TypeScript backend that serves as the single source of truth, synchronizing a real-time React Dashboard and a Conversational Discord Bot.
+Developed by **Team Clover**:
+
+*   **Live Web Dashboard URL:** [https://boss-monitor.vercel.app/](https://boss-monitor.vercel.app/)
+*   **Production Live API Base URL:** [https://boss-monitor.onrender.com](https://boss-monitor.onrender.com)
+
+| Name                      | University              | GitHub / Portfolio                                     |
+| :------------------------ | :---------------------- | :----------------------------------------------------- |
+| **Sadman Islam**          | Metropolitan University | [GitHub: amisadman](https://github.com/amisadman)      |
+| **Shah Samin Yasar**      | Metropolitan University | [Portfolio](https://shahsaminyasar.vercel.app/)        |
+| **Ahmed Thousif Thisham** | Metropolitan University | [Portfolio](https://ahmedthousifportfolio.vercel.app/) |
+
+---
+
+Boss Monitor is a real-time energy monitoring, alert, and automation system designed for modern smart offices. The project features a unified monorepo architecture:
+
+1.  **TypeScript & Express Backend:** Serves as the single source of truth, running a 120x accelerated virtual-time simulation with active alert rules and historical snapshots stored in MongoDB.
+2.  **React Frontend Dashboard:** An interactive single-page Web application built with Vite and TailwindCSS/DaisyUI that renders live status gauges, hourly bar charts, active alert alerts, and an interactive top-view office map (Furnished & Circuit mode) updated instantly via WebSockets (Socket.io).
+3.  **Python Discord Bot:** A conversational AI assistant integrated with Groq LLM and the Discord API to answer questions on demand (`!status`, `!usage`, `!room`) and proactively post warning alerts to Discord text channels.
+4.  **Hardware Simulation Nodes:** Simulated ESP32 microcontrollers configured in Wokwi (Drawing Room, Work Room 1, Work Room 2) running custom firmware, wiring standards, and outputting JSON payloads to Serial.
 
 ---
 
 ## 1. System Architecture
 
-```
-┌─────────────────────┐
-│  Simulator Module   │  (Runs inside backend on a 10s interval)
-│  - virtual-time 120x│
-│  - 15 devices state │
-└──────────┬──────────┘
-           │ Writes to
-           ▼
-┌─────────────────────┐        ┌──────────────────────┐
-│   MongoDB           │◄──────►│  Express Backend API  │
-│  (device states,    │        │  - REST Endpoints    │
-│   alerts history,   │        │  - Socket.io Server  │
-│   usage snapshots)  │        │  - Alert Engine      │
-└─────────────────────┘        └───────┬──────┬───────┘
-                                       │      │
-                      Socket.io push   │      │   REST calls / polls
-                                       ▼      ▼
-                        ┌────────────────┐  ┌────────────────────┐
-                        │React Dashboard │  │ Python Discord Bot │
-                        │- Floorplan animation- !status command  │
-                        │- Real-time power    - !usage command   │
-                        │- Alerts panel        - Proactive alerts │
-                        └────────────────┘  └────────────────────┘
-```
+The following diagram illustrates the flow of state data, REST API requests, Socket.io real-time events, and AI conversational responses throughout the Boss Monitor ecosystem:
+
+![Boss Monitor System Architecture](readme_resources/system_diagram.png)
 
 ---
 
@@ -38,49 +35,144 @@ Boss Monitor is a real-time energy monitoring and alert system designed for mode
 ```
 ├── backend/
 │   ├── src/
-│   │   ├── app.ts                 # Express app configurations
-│   │   ├── server.ts              # Server startup & socket connection
-│   │   ├── config/                # Database connections
-│   │   ├── database/              # Device seeding scripts
-│   │   ├── middleware/            # Error handling & Zod validators
-│   │   ├── modules/               # Modular features (device, alert, usage, simulator)
+│   │   ├── app.ts                 # Express configuration & routes mapping
+│   │   ├── server.ts              # Database connection & socket server initialization
+│   │   ├── config/                # Database configuration
+│   │   ├── database/              # Seeding script
+│   │   ├── middleware/            # Validator & error handler middlewares
+│   │   ├── modules/               # Modular backend modules (alerts, devices, simulator, usage)
 │   │   ├── scripts/               # verify-simulation integration test script
-│   │   └── utils/                 # Socket, catchAsync, response helpers
-│   ├── Dockerfile                 # Multi-stage production build
+│   │   └── utils/                 # Socket, response, and catchAsync helpers
 │   └── package.json
-├── client/                        # React Frontend Dashboard
-├── .gitignore                     # Root-level ignores
-└── README.md                      # This documentation
+├── client/
+│   ├── public/                # Office map SVGs & layouts
+│   ├── src/
+│   │   ├── assets/            # UI asset icons
+│   │   ├── components/        # AlertsPanel, Header, OfficeDevices, UsageGraph components
+│   │   ├── socket.ts          # Socket client configuration
+│   │   ├── types.ts           # Shared TypeScript interfaces
+│   │   ├── App.tsx            # Main layout and Socket.io hooks integration
+│   │   └── index.css          # Tailwind configurations & theme resets
+│   └── package.json
+├── discordbot/
+│   ├── bot.py                 # discord.py bot with Groq LLM integration
+│   ├── requirements.txt       # Bot dependencies
+│   └── env.sample             # Environment configuration template
+├── wokwi/
+│   ├── drawing.ino            # Drawing Room Firmware (C++ code)
+│   ├── room1.ino              # Work Room 1 Firmware (C++ code)
+│   ├── room2.ino              # Work Room 2 Firmware (C++ code)
+│   ├── drawing_diagram.json   # Drawing Room Wokwi Canvas Schematic
+│   ├── room1_diagram.json     # Work Room 1 Wokwi Canvas Schematic
+│   ├── room2_diagram.json     # Work Room 2 Wokwi Canvas Schematic
+│   └── README.md              # Hardware wiring and pinout guides
+└── README.md                  # This documentation
 ```
 
 ---
 
-## 3. Tech Stack
+## 3. Project Previews & Screenshots
 
-*   **Runtime:** Node.js (v20+)
-*   **Language:** TypeScript
-*   **Framework:** Express.js
-*   **Real-time Communication:** Socket.io (v4)
-*   **Database ODM:** Mongoose (MongoDB)
-*   **Validation:** Zod
-*   **Development Tools:** ts-node-dev, typescript compiler
+### A. Web Dashboard
+
+#### 1. Office Floorplan (Furnished Mode)
+
+![Dashboard Furnished View](readme_resources/dashboard_room.png)
+
+#### 2. Electrical Layout & Consumption Graphs (Circuit Mode)
+
+![Dashboard Circuit & Graph View](readme_resources/dashboard_circuit_graph.png)
+
+#### 3. Time Traveler Controls (Fast-Forwarding Clock)
+
+![Dashboard Time Traveler View](readme_resources/dashboard_time_travel.png)
+
+### B. Conversational Discord Bot
+
+#### 1. Help Guide & Commands Overview (`!helpme`)
+
+![Discord Bot Help Guide](readme_resources/!helpme.png)
+
+#### 2. Live Office Status Query (`!status`)
+
+![Discord Bot Office Status](readme_resources/!status.png)
+
+#### 3. Room Status Queries (`!room`)
+
+![Discord Bot Room Status](readme_resources/!room.png)
+
+#### 4. Energy Consumption Stats (`!usage`)
+
+![Discord Bot Energy Usage](readme_resources/!usage.png)
+
+#### 5. Simulated Time Query (`!time`)
+
+![Discord Bot Simulated Time](readme_resources/!time.png)
+
+#### 6. Proactive Policy Violation Alerts
+
+![Discord Bot Proactive Alert](readme_resources/alart.png)
+
+### C. Wokwi ESP32 Circuit Schematic
+
+![Wokwi Room 1 Circuit Schematic](readme_resources/wokwi_schematic.png)
 
 ---
 
-## 4. Getting Started
+## 4. Component Details & Tech Stack
 
-### Local Installation
-1.  **Prerequisites:** Ensure Node.js and MongoDB are installed locally.
-2.  **Navigate to backend directory:**
+### A. Unified Express & TypeScript Backend
+
+- **Database ODM:** Mongoose (MongoDB)
+- **Virtual accelerated clock:** Accelerates time by `120x` (1 real second = 120 simulated seconds; 30 real seconds = 1 simulated hour). Starts at **8:00 AM** today.
+- **24-Hour Catch-up Seeding:** On startup, the backend automatically performs a fast catch-up simulation of 72 ticks to populate a clean, realistic 24-hour database history. Socket and alert emissions are muted during catch-up.
+- **Rules & Alert Engine:**
+  - _After-Hours Rule:_ Any device left ON between 5:00 PM and 9:00 AM triggers an immediate timestamped alert.
+  - _Prolonged-On Rule:_ A room where all devices have been ON for more than 2 simulated hours triggers a warning.
+  - _Special Demo Override:_ All devices in Work Room 1 are automatically locked ON between 10:00 AM and 1:00 PM simulated time to guarantee that a prolonged-on alert triggers and resolves automatically during presentation walks.
+
+### B. React Frontend Dashboard (Vite, TailwindCSS & Recharts)
+
+- **Real-time Floorplan:** A responsive office floorplan showing live device states with glowing light indicators and spinning fan animations. Supports **Furnished View** and **Circuit View**.
+- **WebSocket Engine:** Subscribes to the backend Socket.io updates to append new data points to the graph and toggle states in real-time without page refreshes.
+- **Analytics:** Recharts bar charts showing hourly consumption averages for the last 24 simulated hours.
+
+### C. Conversational Discord Bot (Python, Groq API & discord.py)
+
+- **Conversational AI:** Integrates with the **Groq API** to process inputs and produce friendly, humanized natural language responses.
+- **Available Discord Commands:**
+  Once the bot is running and added to your server, type `!helpme` in any channel it can see, or use these directly:
+  - `!status` — Show office status
+  - `!devices` — Shows total devices and active status
+  - `!room DrawingRoom` — Show Drawing Room status
+  - `!room WorkRoom1` — Show Work Room 1 status
+  - `!room WorkRoom2` — Show Work Room 2 status
+  - `!usage` — Show power usage
+  - `!time` — Show simulated time
+  - `!ask <question>` — Chat with AI as usual and also replies to any query related to the backend.
+- **Proactive Alerts Broadcast:** Runs a background task polling the `/api/alerts` endpoint, posting warning alerts to designated Discord channels the moment a rule violation is detected in the office.
+
+### D. Wokwi ESP32 Hardware Simulations
+
+- **Simulated Sensors:** Utilizes a sliding potentiometer to simulate an **ACS712 current sensor** connected to GPIO 34 (VP), baseline voltage of 1.65V (offset).
+- **JSON Serial Outputs:** Outputting JSON snapshots of room device states and simulated power draws to the Serial Monitor every 5 seconds.
+- **Standard Wiring Colors:** Red/Black (supply power), Brown (simulated AC live line), Blue (simulated Neutral return), Gray (analog inputs).
+
+---
+
+## 5. Getting Started & Setup Guide
+
+### Backend Server Setup
+
+1.  Navigate to the `backend/` directory:
     ```bash
     cd backend
     ```
-3.  **Install dependencies:**
+2.  Install dependencies:
     ```bash
     npm install
     ```
-4.  **Configure environment variables:**
-    Create a `.env` file from `.env.example`:
+3.  Configure variables in a `.env` file based on `backend/.env.example`:
     ```env
     PORT=5000
     MONGO_URI=mongodb://localhost:27017/boss-monitor
@@ -88,107 +180,84 @@ Boss Monitor is a real-time energy monitoring and alert system designed for mode
     SIMULATOR_TICK_RATE_MS=10000
     NODE_ENV=development
     ```
-5.  **Run Development Server:**
+4.  Start development server:
     ```bash
     npm run dev
     ```
-    *Note: The server will automatically seed the 15 initial devices into MongoDB on first startup.*
 
-6.  **Run Automated Integration Tests:**
+### Frontend Dashboard Setup
+
+1.  Navigate to the `client/` directory:
     ```bash
-    npm run test:simulation
+    cd client
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Configure variables in a `client/.env` file based on `client/env` template:
+    ```env
+    VITE_API_URL="http://localhost:5000"
+    ```
+4.  Start development server:
+    ```bash
+    npm run dev
+    ```
+
+### Discord Bot Setup
+
+1.  Navigate to the `discordbot/` directory:
+    ```bash
+    cd discordbot
+    ```
+2.  Install dependencies using pip:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Configure variables in a `.env` file based on `discordbot/env.sample`:
+    ```env
+    DISCORD_TOKEN="YOUR_DISCORD_BOT_TOKEN"
+    GROQ_API_KEY="YOUR_GROQ_API_KEY"
+    BACKEND_URL="http://localhost:5000"
+    ALERT_CHANNEL_ID="YOUR_DISCORD_ALERT_CHANNEL_ID_1"
+    ALERT_CHANNEL_ID_2="YOUR_DISCORD_ALERT_CHANNEL_ID_2"
+    ```
+4.  Run the bot:
+    ```bash
+    python bot.py
     ```
 
 ---
 
-## 5. API Reference
+## 6. API Reference
 
-*   **Production Live API Base URL:** [https://boss-monitor.onrender.com](https://boss-monitor.onrender.com)
-*   **API Response Examples:** Refer to [backend/api_responses.md](backend/api_responses.md) for real payload examples.
-*   **Local Development Base URL:** `http://localhost:5000`
-
-All REST endpoints return standardized payloads in the following format:
-```json
-{
-  "status": 200,
-  "success": true,
-  "message": "Description",
-  "data": { ... }
-}
-```
+- **Production Live API Base URL:** [https://boss-monitor.onrender.com](https://boss-monitor.onrender.com)
+- **API Response Examples:** Refer to [backend/api_responses.md](backend/api_responses.md) for real payload examples.
+- **Local Development Base URL:** `http://localhost:5000`
 
 ### Endpoints
 
-*   **`GET /`**
-    Returns server details, client details, health status, and backend uptime.
-*   **`GET /api/devices`**
-    Fetches all 15 office devices (supports sorting/filtering via `QueryBuilder`).
-*   **`GET /api/devices/rooms/:room`**
-    Fetches all devices in a specific room (`DrawingRoom`, `WorkRoom1`, `WorkRoom2`).
-*   **`GET /api/usage`**
-    Fetches the live room-wise wattage breakdown, projected daily kWh, estimated daily costs (BDT), and current simulated clock time.
-*   **`GET /api/usage/history`**
-    Retrieves the last 50 usage snapshots (used to populate the main dashboard line chart).
-*   **`GET /api/usage/hourly`**
-    Retrieves aggregated room-by-room averages for the last 24 simulated hours (dynamically aligned to the simulator clock).
-*   **`GET /api/alerts`**
-    Fetches active and historical alerts (triggered by rule violations).
-*   **`POST /api/alerts/:id/ack`**
-    Acknowledges an alert to prevent Discord message notification spam.
-*   **`POST /api/simulator/device`**
-    Manually overrides a device status (`on` or `off`), triggers instant Socket.io updates, and re-evaluates rules.
-    *   *Payload:* `{ "deviceId": "drawing-fan-1", "status": "on" }`
-*   **`POST /api/simulator/time`**
-    Jumps the simulator's virtual clock to a specific hour (0-23) to test transition rule changes.
-    *   *Payload:* `{ "hour": 17 }`
+- **`GET /`** — Health details, client IP metadata, and system uptime.
+- **`GET /api/devices`** — Fetches all 15 devices.
+- **`GET /api/devices/rooms/:room`** — Fetches devices for a room (`DrawingRoom`, `WorkRoom1`, `WorkRoom2`).
+- **`GET /api/usage`** — Live room-wise wattage breakdown, cumulative kWh, BDT costs, and simulated clock.
+- **`GET /api/usage/history`** — Fetches the last 50 snapshots.
+- **`GET /api/usage/hourly`** — Hourly consumption bar charts statistics for the past 24 hours.
+- **`GET /api/alerts`** — Active and historical alerts.
+- **`POST /api/alerts/:id/ack`** — Acknowledges an alert to prevent Discord broadcast notification spam.
+- **`POST /api/simulator/device`** — Manually overrides a device status (`on` or `off`).
+- **`POST /api/simulator/time`** — Jumps the simulated virtual clock to a specific hour (0-23).
 
 ---
 
-## 6. Socket.io Events
-
-*   **`device:update`**
-    Emitted every `10s` (on every simulator tick). Sends the latest status of all 15 devices, current simulated time, and power consumption statistics.
-*   **`alert:new`**
-    Emitted immediately when an alert triggers (e.g. device left on after-hours).
-*   **`alert:resolved`**
-    Emitted immediately when an alert condition is resolved.
-
----
-
-## 7. Simulator & Alert Logic
-
-The simulator runs inside the backend process on an interval of `10 seconds` (real-time).
-*   **Virtual Clock:** Accelerated at `120x` (1 real second = 120 simulated seconds; 30 real seconds = 1 simulated hour). Starts at **8:00 AM** on launch.
-*   **Office Hours (9 AM - 5 PM):** Devices have an 80% baseline chance of being active.
-*   **After Hours (5 PM - 9 AM):** Devices have a 10% baseline chance. The simulator guarantees at least 1-2 devices remain active in the office to ensure alerts fire for the demo.
-*   **Special Demo Rule:** All devices in `work1` are forced to stay ON between 10:00 AM and 1:00 PM simulated time to guarantee that the `prolonged-on` alert (triggered when a room's devices are ON for >2 simulated hours) fires and resolves automatically during presentation runs.
-
----
-
-## 8. Hardware / ESP32 Controller Simulations
+## 7. Wokwi Hardware Simulations
 
 For details on wiring standards, pinout configurations, and the C++ firmware, refer to the [Wokwi Hardware Simulation Guide](wokwi/README.md).
 
 ### Live Wokwi Simulation Projects
 
-| Room | Wokwi Project Simulation URL |
-| :--- | :--- |
+| Room             | Wokwi Project Simulation URL                                             |
+| :--------------- | :----------------------------------------------------------------------- |
 | **Drawing Room** | [Drawing Room Simulation](https://wokwi.com/projects/468547829392730113) |
-| **Work Room 1** | [Work Room 1 Simulation](https://wokwi.com/projects/468601813237379073) |
-| **Work Room 2** | [Work Room 2 Simulation](https://wokwi.com/projects/468602256710643713) |
-
-### ESP32 Pin-Mapping (Standardized)
-
-| Component | ESP32 GPIO | Description |
-| :--- | :--- | :--- |
-| **Fan 1 Relay** | `GPIO 16` | Active HIGH Relay Control |
-| **Fan 2 Relay** | `GPIO 17` | Active HIGH Relay Control |
-| **Light 1 Relay** | `GPIO 18` | Active HIGH Relay Control |
-| **Light 2 Relay** | `GPIO 19` | Active HIGH Relay Control |
-| **Light 3 Relay** | `GPIO 21` | Active HIGH Relay Control |
-| **ACS712 Output** | `GPIO 34 (VP)` | Potentiometer input simulating analog current |
-
-### Current Sensor Simulation Calculation
-At 0 Amps, the simulated ACS712 current sensor outputs `1.65V` (half of Vcc). The firmware reads this analog voltage and calculates:
-$$\text{Current (Amps)} = \frac{|\text{Sensor Voltage} - 1.65\text{V}|}{0.185\text{V/A}}$$
-$$\text{Power (Watts)} = \text{Current (Amps)} \times 220\text{V (Bangladesh AC Mains)} $$
+| **Work Room 1**  | [Work Room 1 Simulation](https://wokwi.com/projects/468601813237379073)  |
+| **Work Room 2**  | [Work Room 2 Simulation](https://wokwi.com/projects/468602256710643713)  |
