@@ -27,9 +27,7 @@ export const setSimulatedTime = (time: Date): void => {
 
 export const runSimulationTick = async (): Promise<void> => {
   try {
-    // 1. Advance simulated time
-    // TICK_RATE_MS is usually 10000ms. Speed multiplier is 120.
-    // 10s * 120 = 1200 seconds = 20 minutes
+    // Advance virtual time (e.g. 10 real seconds * 120 multiplier = 20 simulated minutes)
     const tickRateMs = Number(process.env.SIMULATOR_TICK_RATE_MS) || 10000;
     const multiplier = Number(process.env.SIMULATOR_CLOCK_SPEED) || 120;
     const timeToAdvanceMs = tickRateMs * multiplier;
@@ -39,20 +37,16 @@ export const runSimulationTick = async (): Promise<void> => {
     const hour = simulatedTime.getHours();
     const isOfficeHours = hour >= simulatorConfig.officeStartHour && hour < simulatorConfig.officeEndHour;
     
-    // Transition detection
     const transitionToAfterHours = wasOfficeHours === true && !isOfficeHours;
     wasOfficeHours = isOfficeHours;
 
     logger.info(`Simulator Tick - Virtual Time: ${simulatedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${isOfficeHours ? 'Office Hours' : 'After Hours'})`);
 
-    // 2. Fetch all devices
     const devices = await Device.find();
     if (devices.length === 0) {
       logger.warn('No devices found in DB. Skip simulation tick.');
       return;
     }
-
-    // 3. Mutate device states (Parallel DB Writes)
     const savePromises = devices.map(async (device) => {
       let shouldBeOn = device.status === 'on';
 
@@ -94,14 +88,12 @@ export const runSimulationTick = async (): Promise<void> => {
 
     await Promise.all(savePromises);
 
-    // Special Demo Rule: After-hours guarantee
-    // Ensure at least 1-2 devices remain ON during after-hours in some room
-    // so judges can observe the after-hours alert.
+    // Demo Rule: Ensure active devices during after-hours to show alerts
     if (!isOfficeHours) {
       const activeDevices = devices.filter((d) => d.status === 'on');
       if (activeDevices.length === 0) {
         logger.info('After hours: No devices are ON. Forcing 1-2 devices ON for alert demonstration.');
-        const countToTurnOn = Math.floor(Math.random() * 2) + 1; // 1 or 2
+        const countToTurnOn = Math.floor(Math.random() * 2) + 1;
         const forcePromises = [];
         for (let i = 0; i < countToTurnOn; i++) {
           const randomIndex = Math.floor(Math.random() * devices.length);
@@ -115,16 +107,12 @@ export const runSimulationTick = async (): Promise<void> => {
       }
     }
 
-    // Refetch mutated devices
     const updatedDevices = await Device.find();
 
-    // 4. Run Alert Evaluation Engine
     await evaluateAlerts(updatedDevices);
 
-    // Get usage summary for broadcast
     const summary = await getUsageSummary(simulatedTime);
 
-    // 6. Broadcast snapshot to dashboard clients via Socket.io IMMEDIATELY
     if (!isFastForwarding) {
       try {
         const io = getIO();
@@ -138,7 +126,6 @@ export const runSimulationTick = async (): Promise<void> => {
       }
     }
 
-    // 5. Save usage snapshot in background (asynchronously, do not block)
     saveUsageSnapshot(summary.totalWattsNow, summary.perRoomWatts, simulatedTime)
       .catch((error) => logger.error('Error saving usage snapshot in background:', error));
 
@@ -153,18 +140,15 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
 
   // Rule 1: After-hours Alerts
   if (!isOfficeHours) {
-    // If after-hours, any device that is ON triggers an after-hours alert
     for (const device of devices) {
       if (device.status === 'on') {
         const message = `${device.label} left ON in ${device.room} room after hours.`;
         await triggerAlert('after-hours', device.deviceId, message, simulatedTime);
       } else {
-        // Resolve if device is now turned OFF
         await resolveAlert('after-hours', device.deviceId, simulatedTime);
       }
     }
   } else {
-    // If it is office hours, resolve all active after-hours alerts
     const activeAfterHoursAlerts = await Alert.find({ type: 'after-hours', resolvedAt: null });
     for (const alert of activeAfterHoursAlerts) {
       await resolveAlert('after-hours', alert.scope, simulatedTime);
@@ -172,7 +156,6 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
   }
 
   // Rule 2: Prolonged-on Alerts
-  // A room where ALL devices have been continuously on for >2 hours
   const rooms = ['DrawingRoom', 'WorkRoom1', 'WorkRoom2'];
   for (const room of rooms) {
     const roomDevices = devices.filter((d) => d.room === room);
@@ -180,7 +163,6 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
     
     let isProlongedOn = false;
     if (allOn) {
-      // Check if for all devices in the room, the onSince is older than 2 simulated hours
       const twoHoursAgoMs = simulatedTime.getTime() - 2 * 60 * 60 * 1000;
       isProlongedOn = roomDevices.every(
         (d) => d.onSince && d.onSince.getTime() <= twoHoursAgoMs
@@ -191,7 +173,6 @@ const evaluateAlerts = async (devices: IDevice[]): Promise<void> => {
       const message = `All devices in ${room} room have been ON for more than 2 hours.`;
       await triggerAlert('prolonged-on', room, message, simulatedTime);
     } else {
-      // If not prolonged on, resolve any active alert for this room
       await resolveAlert('prolonged-on', room, simulatedTime);
     }
   }
@@ -213,15 +194,12 @@ export const startSimulator = async (): Promise<void> => {
       isFastForwarding = true;
       setSuppressSocketEmissions(true);
 
-      // Clear existing partial history
       await UsageHistory.deleteMany({});
 
-      // Set simulator time to 24 hours ago
       const nowTime = new Date();
       const startTime = new Date(nowTime.getTime() - 24 * 60 * 60 * 1000);
       setSimulatedTime(startTime);
 
-      // Run 72 ticks to simulate 24 hours of activity (20 mins per tick)
       for (let i = 0; i < 72; i++) {
         await runSimulationTick();
       }
@@ -236,7 +214,6 @@ export const startSimulator = async (): Promise<void> => {
     setSuppressSocketEmissions(false);
   }
   
-  // Run first regular tick immediately
   await runSimulationTick();
   
   simulatorInterval = setInterval(runSimulationTick, tickRateMs);
@@ -261,11 +238,9 @@ export const manualToggleDevice = async (deviceId: string, status: 'on' | 'off')
   device.onSince = status === 'on' ? simulatedTime : null;
   await device.save();
 
-  // Refetch all devices for alert evaluation and broadcast
   const allDevices = await Device.find();
   await evaluateAlerts(allDevices);
 
-  // Broadcast state instantly via socket
   const summary = await getUsageSummary(simulatedTime);
   try {
     const io = getIO();
@@ -275,10 +250,8 @@ export const manualToggleDevice = async (deviceId: string, status: 'on' | 'off')
       ...summary,
     });
   } catch (err) {
-    // Socket.io not initialized
   }
 
-  // Save snapshot in background
   saveUsageSnapshot(summary.totalWattsNow, summary.perRoomWatts, simulatedTime)
     .catch((error) => logger.error('Error saving usage snapshot in background:', error));
 
@@ -294,10 +267,8 @@ export const setSimulatorHour = async (hour: number): Promise<Date> => {
   nextTime.setHours(hour, 0, 0, 0);
   simulatedTime = nextTime;
 
-  // Reset wasOfficeHours so transition triggers are re-evaluated next tick
   wasOfficeHours = null;
 
-  // Trigger a simulator tick immediately to evaluate status and alerts for the new hour
   await runSimulationTick();
 
   return simulatedTime;
