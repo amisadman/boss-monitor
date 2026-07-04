@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Sadman Islam",
+  "author": "Team Clover",
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": -76.8, "left": 1003.24, "attrs": {} },
