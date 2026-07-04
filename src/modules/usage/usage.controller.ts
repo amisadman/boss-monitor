@@ -21,7 +21,8 @@ export const getUsageHistory = catchAsync(async (req: Request, res: Response) =>
 });
 
 export const getHourlyUsage = catchAsync(async (req: Request, res: Response) => {
-  const history = await usageService.getHourlyUsageHistory();
+  const simulatedTime = getSimulatedTime();
+  const history = await usageService.getHourlyUsageHistory(simulatedTime);
   
   return sendResponse(res, 200, true, 'Hourly usage history retrieved successfully', history);
 });

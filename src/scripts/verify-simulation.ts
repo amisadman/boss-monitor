@@ -130,7 +130,7 @@ const runTest = async () => {
     // 9. Test hourly usage aggregation history
     console.log('\n--- Test Hourly Usage Aggregation History ---');
     const { getHourlyUsageHistory } = require('../modules/usage/usage.service');
-    const hourlySummary = await getHourlyUsageHistory();
+    const hourlySummary = await getHourlyUsageHistory(time8Manual);
     assert(Array.isArray(hourlySummary), 'Hourly usage history should return an array');
     assert(hourlySummary.length > 0, 'Hourly usage history should contain at least one hourly grouping');
     assert(hourlySummary[0].hour !== undefined, 'Hourly summary object should contain an hour field');
