@@ -32,13 +32,15 @@ export const triggerAlert = async (
 
   await newAlert.save();
 
-  // Broadcast to all dashboard clients
-  try {
-    const io = getIO();
-    io.emit('alert:new', newAlert);
-  } catch (err) {
-    // Socket io might not be initialized (e.g. during script validation tests)
-  }
+  // Broadcast to all dashboard clients with an intentional 1.5s delay
+  setTimeout(() => {
+    try {
+      const io = getIO();
+      io.emit('alert:new', newAlert);
+    } catch (err) {
+      // Socket io might not be initialized (e.g. during script validation tests)
+    }
+  }, 1500);
 
   return newAlert;
 };
@@ -54,12 +56,15 @@ export const resolveAlert = async (
   activeAlert.resolvedAt = simulatedTime;
   await activeAlert.save();
 
-  try {
-    const io = getIO();
-    io.emit('alert:resolved', activeAlert);
-  } catch (err) {
-    // Socket io not initialized
-  }
+  // Broadcast to all dashboard clients with an intentional 1.5s delay
+  setTimeout(() => {
+    try {
+      const io = getIO();
+      io.emit('alert:resolved', activeAlert);
+    } catch (err) {
+      // Socket io not initialized
+    }
+  }, 1500);
 
   return activeAlert;
 };
