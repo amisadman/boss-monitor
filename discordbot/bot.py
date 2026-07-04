@@ -17,7 +17,7 @@ BACKEND_URL = os.getenv("BACKEND_URL").rstrip("/")
 ALERT_CHANNEL_ID_1 = int(os.getenv("ALERT_CHANNEL_ID"))
 ALERT_CHANNEL_ID_2 = int(os.getenv("ALERT_CHANNEL_ID_2"))
 
-# Initialize Groq client
+# Groq 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 # dc bot setup
@@ -156,7 +156,73 @@ def humanize_response(summary_context: str, user_query: str, fallback_text: str,
         return fallback_text
 
 
-# onready run
+def answer_ask_query(context: str, question: str) -> str:
+    """Handles free-form !ask messages — general chat, or backend-grounded answers when relevant."""
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are OfficeAI, a helpful assistant chatting with the boss on Discord. "
+                        "Below is the office's current live device and power data. "
+                        "If the boss's message asks about fans, lights, rooms, power, or usage, answer "
+                        "using ONLY the exact figures given below — never invent or estimate a number "
+                        "that isn't there. If the message is unrelated to the office (small talk, "
+                        "general questions, greetings), just respond naturally like a normal helpful "
+                        "assistant — ignore the data below in that case. "
+                        "Keep answers short, a few sentences at most. No bullet points needed unless "
+                        "it genuinely helps clarity. Use the 🌀 emoji when mentioning fans and 💡 when "
+                        "mentioning lights, placed immediately before the number. Never use a dollar "
+                        "sign or any currency symbol. Do not use code block markdown or backticks."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Live Office Data:\n{context}\n\nBoss's message: {question}"
+                }
+            ],
+            temperature=0.5,
+            max_tokens=200
+        )
+        return chat_completion.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"⚠️ Groq Core Error on !ask: {e}")
+        return "Boss, I'm having trouble reaching the AI engine right now — try again in a moment."
+
+
+def generate_closing_comment(summary_context: str, fallback_comment: str) -> str:
+    """Generates ONLY a one-sentence closing remark — used when data is displayed statically."""
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You write exactly one short closing sentence for an office status report, "
+                        "addressed to the boss on Discord (start with 'Boss,'). Summarize the data given "
+                        "below in a single sentence — use only the exact figures provided, never invent "
+                        "or estimate anything not given. Output ONLY that one sentence — no bullet points, "
+                        "no headline, no extra commentary, no code block markdown."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Office Metrics Summary:\n{summary_context}"
+                }
+            ],
+            temperature=0.3,
+            max_tokens=60
+        )
+        return chat_completion.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"⚠️ Groq Core Error (Using backup comment): {e}")
+        return fallback_comment
+
+
+
 @bot.event
 async def on_ready():
     print(f"🤖 Connected successfully as {bot.user}")
@@ -185,7 +251,6 @@ async def time(ctx):
             
             time_body = (
                 f"• **Time:** {time_ctx['formatted_clock']}\n"
-                f"• **Date:** {time_ctx['formatted_date']}\n"
                 f"• **Shift Mode:** {status_icon} (Hour: {time_ctx['simulated_hour']})"
             )
 
@@ -226,48 +291,96 @@ async def status(ctx):
                     elif d.get("type") == "light":
                         room_stats[room]["lights"] += 1
 
+            # Static bullets — built directly from backend data, no AI involved
             summary = f"- Total power consumption right now: {total_power}W.\n"
-            fallback_list = [f"**Total Power**\n• ⚡ {total_power}W"]
+            bullet_lines = [f"**Total Power**\n• ⚡ {total_power}W"]
+
+            # Define the exact order you want the rooms to appear in
+            desired_room_order = ["DrawingRoom", "WorkRoom1", "WorkRoom2"]
+            
+            # Combine desired order with any unexpected rooms that might come from the backend API
+            all_rooms = desired_room_order + [r for r in room_stats if r not in desired_room_order]
 
             total_devices_on = 0
-            for room, counts in room_stats.items():
+            for room in all_rooms:
+                if room not in room_stats:
+                    continue  # Skip if the room isn't currently returned by the API
+                
+                counts = room_stats[room]
                 friendly_name = display_room_name(room)
                 total_devices_on += counts["fans"] + counts["lights"]
-                line = f"{friendly_name}: {counts['fans']} fan(s) ON, {counts['lights']} light(s) ON."
-                summary += f"- {line}\n"
-                fallback_list.append(
+                summary += f"- {friendly_name}: {counts['fans']} fan(s) ON, {counts['lights']} light(s) ON.\n"
+                bullet_lines.append(
                     f"**{friendly_name}**\n"
                     f"• 🌀 {counts['fans']} fan(s) ON\n"
                     f"• 💡 {counts['lights']} light(s) ON"
                 )
 
             summary += f"- Total devices currently on across all rooms: {total_devices_on}.\n"
-            fallback_lines = ["\n\n".join(fallback_list)]
 
+            fallback_comment = f"Boss, power consumption is {total_power}W with {total_devices_on} device(s) on."
             if time_ctx:
                 summary += (
-                    f"- Current simulated time: {time_ctx['formatted_clock']} on {time_ctx['formatted_date']}. "
+                    f"- Current simulated time: {time_ctx['formatted_clock']}. "
                     f"Shift status: {time_ctx['shift_label']} (hour {time_ctx['simulated_hour']}).\n"
                 )
-                fallback_lines.append(
+                fallback_comment = (
                     f"Boss, power consumption is {total_power}W with {total_devices_on} device(s) on, "
                     f"and it's currently {time_ctx['shift_label']}."
                 )
 
-            fallback_text = "\n\n".join(fallback_lines)
-            ai_reply = humanize_response(
-                summary,
-                "Give me a breakdown of the overall office status.",
-                fallback_text,
-                allow_closing_comment=True
-            )
+            # AI is used ONLY to phrase the closing comment — not the data above
+            closing_comment = generate_closing_comment(summary, fallback_comment)
 
-            embed = build_embed("🏢 Office Status Overview", ai_reply, "status")
+            body = "\n\n".join(bullet_lines) + "\n\n" + closing_comment
+            embed = build_embed("🏢 Office Status Overview", body, "status")
             await ctx.send(embed=embed)
 
         except Exception as e:
             print(f"Error on !status: {e}")
             error_embed = build_embed("❌ Status Check Failed", "Boss, I can't reach the backend API server right now.", "error")
+            await ctx.send(embed=error_embed)
+
+# device related
+@bot.command(name="devices")
+async def devices_cmd(ctx):
+    async with ctx.typing():
+        try:
+            response = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
+            response.raise_for_status()
+            devices = response.json()["data"]
+
+            if not devices:
+                empty_embed = build_embed("📋 Devices", "Boss, no devices were found on the backend.", "error")
+                await ctx.send(embed=empty_embed)
+                return
+
+            rows = []
+            for d in devices:
+                room = display_room_name(d.get("room", "unknown"))
+                label = d.get("label", d.get("deviceId", "Unknown"))
+                status = d.get("status", "unknown").upper()
+                rows.append((room, label, status))
+
+            rows.sort(key=lambda r: (r[0], r[1]))
+
+            room_w = max(len("Room"), max(len(r[0]) for r in rows))
+            label_w = max(len("Device"), max(len(r[1]) for r in rows))
+
+            lines = [f"{'Room'.ljust(room_w)}  {'Device'.ljust(label_w)}  Status"]
+            lines.append("-" * (room_w + label_w + 12))
+            for room, label, status in rows:
+                icon = "🟢" if status == "ON" else "🔴"
+                lines.append(f"{room.ljust(room_w)}  {label.ljust(label_w)}  {icon} {status}")
+
+            table_text = "```\n" + "\n".join(lines) + "\n```"
+
+            embed = build_embed("📋 Devices Overview", table_text, "status")
+            await ctx.send(embed=embed)
+
+        except Exception as e:
+            print(f"Error on !devices: {e}")
+            error_embed = build_embed("❌ Devices Query Failed", "Boss, I couldn't fetch the device list right now.", "error")
             await ctx.send(embed=error_embed)
 
 
@@ -319,7 +432,6 @@ async def room(ctx, *, name: str = None):
             error_embed = build_embed("❌ Room Lookup Failed", f"Could not retrieve metrics details for room scope target '{name}'.", "error")
             await ctx.send(embed=error_embed)
 
-
 # usage related
 @bot.command(name="usage")
 async def usage(ctx):
@@ -334,39 +446,117 @@ async def usage(ctx):
             daily_kwh = usage_data.get("estimatedKwhToday", 0)
             per_room_watts = normalize_per_room_watts(usage_data.get("perRoomWatts", {}))
 
+            
             summary = (
-                f"Telemetry: Current total load is {live_w}W. Estimated daily energy footprint is "
-                f"{daily_kwh} kWh."
+                f"Telemetry: Current total load is {live_w}W. "
+                f"Estimated daily energy footprint is {daily_kwh} kWh."
             )
-            fallback_list = [
-                f"⚡ Current Power: **{live_w}W**\n"
-                f"📈 Today's Usage: **{daily_kwh} kWh**"
+
+            
+            bullet_lines = [
+                f"**Total Power**\n• ⚡ {live_w}W\n• 📈 Today's footprint: {daily_kwh} kWh"
             ]
 
-            if per_room_watts:
-                room_lines = []
-                for room_key, watts in per_room_watts.items():
-                    friendly_name = display_room_name(room_key)
-                    summary += f"\nPer-room draw: {friendly_name} is using {watts}W."
-                    room_lines.append(f"• {friendly_name}: **{watts}W**")
-                fallback_list.append("**Per-Room Breakdown**\n" + "\n".join(room_lines))
+            
+            desired_room_order = ["DrawingRoom", "WorkRoom1", "WorkRoom2"]
+            all_rooms = desired_room_order + [r for r in per_room_watts if r not in desired_room_order]
 
-            fallback_text = "\n\n".join(fallback_list)
-            fallback_text += f"\n\nBoss, we're currently drawing {live_w}W."
+            
+            for room_key in all_rooms:
+                if room_key not in per_room_watts:
+                    continue  
+                
+                watts = per_room_watts[room_key]
+                friendly_name = display_room_name(room_key)
+                summary += f"\nPer-room draw: {friendly_name} is using {watts}W."
+                
+                bullet_lines.append(
+                    f"**{friendly_name}**\n"
+                    f"• ⚡ Power Draw: {watts}W"
+                )
 
+            fallback_text = f"Boss, total energy draw is currently {live_w}W and today's total is {daily_kwh} kWh."
+
+            
             ai_reply = humanize_response(
                 summary,
-                "What is our current energy utilization draw, broken down by room?",
+                "Give me a summary of our current power draw breakdown.",
                 fallback_text,
                 allow_closing_comment=True
             )
 
-            embed = build_embed("⚡ Energy Usage Report", ai_reply, "usage")
+            
+            body = "\n\n".join(bullet_lines) + "\n\n" + ai_reply
+            embed = build_embed("⚡ Energy Usage Report", body, "usage")
             await ctx.send(embed=embed)
 
         except Exception as e:
             print(f"Error on !usage: {e}")
             error_embed = build_embed("❌ Usage Query Failed", "Failed to query load balancing metrics from the API interface core.", "error")
+            await ctx.send(embed=error_embed)
+    
+
+@bot.command(name="ask")
+async def ask(ctx, *, question: str = None):
+    if not question:
+        hint_embed = build_embed("💬 Ask Me Anything", "Boss, ask me something — e.g. `!ask how many fans are on right now?`", "error")
+        await ctx.send(embed=hint_embed)
+        return
+
+    async with ctx.typing():
+        try:
+            devices_response = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
+            devices_response.raise_for_status()
+            devices = devices_response.json()["data"]
+
+            usage_response = requests.get(f"{BACKEND_URL}/api/usage", timeout=5)
+            usage_response.raise_for_status()
+            usage_payload = usage_response.json()["data"]
+
+            total_power = usage_payload.get("totalWattsNow", 0)
+            daily_kwh = usage_payload.get("estimatedKwhToday", 0)
+            per_room_watts = normalize_per_room_watts(usage_payload.get("perRoomWatts", {}))
+            time_ctx = get_simulated_time_context(usage_payload)
+
+            room_stats = {}
+            for d in devices:
+                room = d.get("room", "unknown")
+                if room not in room_stats:
+                    room_stats[room] = {"fans": 0, "lights": 0}
+                if d.get("status") == "on":
+                    if d.get("type") == "fan":
+                        room_stats[room]["fans"] += 1
+                    elif d.get("type") == "light":
+                        room_stats[room]["lights"] += 1
+
+            context_lines = [
+                f"Total power right now: {total_power}W.",
+                f"Estimated energy used today: {daily_kwh} kWh.",
+            ]
+
+            for room, counts in room_stats.items():
+                friendly_name = display_room_name(room)
+                context_lines.append(f"{friendly_name}: {counts['fans']} fan(s) ON, {counts['lights']} light(s) ON.")
+
+            for room_key, watts in per_room_watts.items():
+                friendly_name = display_room_name(room_key)
+                context_lines.append(f"{friendly_name} power draw: {watts}W.")
+
+            if time_ctx:
+                context_lines.append(
+                    f"Current simulated time: {time_ctx['formatted_clock']} on {time_ctx['formatted_date']} "
+                    f"({time_ctx['shift_label']})."
+                )
+
+            context = "\n".join(context_lines)
+            ai_reply = answer_ask_query(context, question)
+
+            embed = build_embed("💬 OfficeAI", ai_reply, "status")
+            await ctx.send(embed=embed)
+
+        except Exception as e:
+            print(f"Error on !ask: {e}")
+            error_embed = build_embed("❌ Ask Failed", "Boss, I couldn't reach the backend to answer that right now.", "error")
             await ctx.send(embed=error_embed)
 
 
@@ -374,11 +564,13 @@ async def usage(ctx):
 async def helpme(ctx):
     help_body = (
         "`!status` - Show office status\n"
+        "`!devices` - Show all devices in a table\n"
         "`!room DrawingRoom` - Show Drawing Room status\n"
         "`!room WorkRoom1` - Show Work Room 1 status\n"
         "`!room WorkRoom2` - Show Work Room 2 status\n"
         "`!usage` - Show power usage\n"
-        "`!time` - Show simulated time"
+        "`!time` - Show simulated time\n"
+        "`!ask <question>` - Ask anything, chat or office data"
     )
     embed = build_embed("📖 Available Commands", help_body, "time")
     await ctx.send(embed=embed)
@@ -396,7 +588,7 @@ async def check_backend_alerts():
                 print(f"⚠️ Alert channel unreachable: {e}")
                 return
 
-        # Build deviceId -> room lookup + live fan/light counts per room.
+        
         devices_res = requests.get(f"{BACKEND_URL}/api/devices", timeout=5)
         devices_res.raise_for_status()
         devices = devices_res.json()["data"]
@@ -421,10 +613,7 @@ async def check_backend_alerts():
         alerts_res.raise_for_status()
         alerts = alerts_res.json()["data"]
 
-        # Two alert shapes from the backend:
-        # - type "prolonged-on": scope IS the room name directly (e.g. "DrawingRoom")
-        # - anything else: scope is a deviceId (e.g. "work2-fan-2"), resolve via device_id_to_room
-        still_on_rooms = {}    # preserves first-seen order
+        still_on_rooms = {}    
         prolonged_rooms = {}
 
         for alert in alerts:
@@ -461,7 +650,7 @@ async def check_backend_alerts():
         if not still_on_rooms and not prolonged_rooms:
             return
 
-        # Only fetch time context when we actually have something to report
+        
         usage_res = requests.get(f"{BACKEND_URL}/api/usage", timeout=5)
         usage_res.raise_for_status()
         time_ctx = get_simulated_time_context(usage_res.json()["data"])
@@ -489,7 +678,7 @@ async def check_backend_alerts():
     except Exception as e:
         print(f"❌ Error in check_backend_alerts: {e}")
 
-# check bot status if ready or not
+#bot stat
 @check_backend_alerts.before_loop
 async def before_alerts():
     await bot.wait_until_ready()
