@@ -98,19 +98,21 @@ The following diagram illustrates the flow of state data, REST API requests, Soc
 ![Discord Bot Office Status](readme_resources/!status.png)
 
 #### 3. Room Status Queries (`!room`)
-
 ![Discord Bot Room Status](readme_resources/!room.png)
 
-#### 4. Energy Consumption Stats (`!usage`)
+#### 4. Active Devices Query (`!devices`)
+![Discord Bot Active Devices](readme_resources/!devices.png)
 
+#### 5. Energy Consumption Stats (`!usage`)
 ![Discord Bot Energy Usage](readme_resources/!usage.png)
 
-#### 5. Simulated Time Query (`!time`)
-
+#### 6. Simulated Time Query (`!time`)
 ![Discord Bot Simulated Time](readme_resources/!time.png)
 
-#### 6. Proactive Policy Violation Alerts
+#### 7. Natural Language AI Query (`!ask`)
+![Discord Bot AI Query](readme_resources/!ask.png)
 
+#### 8. Proactive Policy Violation Alerts
 ![Discord Bot Proactive Alert](readme_resources/alart.png)
 
 ### C. Wokwi ESP32 Circuit Schematic
