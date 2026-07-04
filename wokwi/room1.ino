@@ -55,8 +55,9 @@ void loop() {
   
   float sensorVoltage = (rawADC / 4095.0) * 3.3;
   
-  float currentAmps = (sensorVoltage - 1.65) / 0.185;
-  if (currentAmps < 0) currentAmps = 0;
+  // Use absolute difference from the 1.65V offset.
+  // This allows the slider to read current in both directions.
+  float currentAmps = abs(sensorVoltage - 1.65) / 0.185;
   
   float totalPowerWatts = currentAmps * MAINS_VOLTAGE;
 
